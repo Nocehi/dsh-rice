@@ -1,5 +1,6 @@
 import React from 'react'
 import { COMMAND_IDS, attentionCount, deriveSessionGroups, flattenGroups, nextMruId, overviewGroups, updateMru } from './core.js'
+import { PULSE_DEFAULTS, PulseTimeline, advancePulseBpm, derivePulseActivity, derivePulseSignal, ecgValue, updatePulseSamples } from './pulse.js'
 import { FishLogo } from '@deepseek-ai/dsh-client-ui-primitives'
 
 export const inject = ['slots', 'layout', 'sessions', 'workspaces']
@@ -47,6 +48,14 @@ const CSS = `
 [data-dsh-rice-switcher] .dsh-rice-row[data-current="true"] .dsh-rice-status { color:var(--dsw-alias-brand-primary); font-weight:650; }
 [data-dsh-rice-switcher] .dsh-rice-empty { padding:32px 20px; color:var(--dsw-alias-label-secondary); text-align:center; font-size:13px; line-height:20px; }
 [data-dsh-rice-switcher] .dsh-rice-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+[data-dsh-rice-pulse] { --dsh-rice-pulse-ink:var(--dsw-alias-label-tertiary); box-sizing:border-box; width:100%; height:28px; min-height:28px; display:grid; grid-template-columns:52px minmax(100px,1fr) 72px; align-items:center; gap:10px; margin:4px 0; padding:0 10px; border:0; border-radius:12px; background:var(--dsw-specific-selector); color:var(--dsw-alias-label-secondary); font-family:var(--dsw-font-family,sans-serif); overflow:hidden; }
+[data-dsh-rice-pulse][data-mode="think"],[data-dsh-rice-pulse][data-mode="run"] { --dsh-rice-pulse-ink:var(--dsw-alias-brand-primary); }
+[data-dsh-rice-pulse][data-mode="tool"] { --dsh-rice-pulse-ink:var(--dsw-alias-state-warn-primary); }
+[data-dsh-rice-pulse][data-mode="flat"] { --dsh-rice-pulse-ink:var(--dsw-alias-state-error-primary); }
+[data-dsh-rice-pulse] .dsh-rice-pulse-bpm { color:var(--dsh-rice-pulse-ink); font-size:12px; line-height:18px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+[data-dsh-rice-pulse] .dsh-rice-pulse-paper { position:relative; min-width:100px; height:22px; overflow:hidden; color:var(--dsh-rice-pulse-ink); }
+[data-dsh-rice-pulse] .dsh-rice-pulse-canvas { position:absolute; inset:0; width:100%; height:100%; display:block; color:inherit; }
+[data-dsh-rice-pulse] .dsh-rice-pulse-status { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-secondary); font-size:11px; line-height:16px; text-align:right; }
 `
 
 const h = React.createElement
@@ -58,6 +67,9 @@ const MATERIAL_SYMBOL_PATHS = Object.freeze({
   add: 'M444-444H276q-15.3 0-25.65-10.29Q240-464.58 240-479.79t10.35-25.71Q260.7-516 276-516h168v-168q0-15.3 10.29-25.65Q464.58-720 479.79-720t25.71 10.35Q516-699.3 516-684v168h168q15.3 0 25.65 10.29Q720-495.42 720-480.21t-10.35 25.71Q699.3-444 684-444H516v168q0 15.3-10.29 25.65Q495.42-240 480.21-240t-25.71-10.35Q444-260.7 444-276v-168Z',
   browseActivity: 'M96-588v-155.85Q96-776 118.56-796q22.57-20 54.25-20h614.5q31.69 0 54.19 20 22.5 20 22.5 52.15V-588h-72v-156H168v156H96Zm76.69 324q-31.69 0-54.19-20Q96-304 96-336v-180h72v180h624v-180h72v180q0 32-22.56 52-22.57 20-54.25 20h-614.5ZM84-144q-15.3 0-25.65-10.29Q48-164.58 48-179.79t10.35-25.71Q68.7-216 84-216h792q15.3 0 25.65 10.29Q912-195.42 912-180.21t-10.35 25.71Q891.3-144 876-144H84Zm396-396ZM96-516v-72h233q14 0 25 7t17 18l39 72 112-176q5-8 12.42-12.5 7.43-4.5 16.5-4.5 9.08 0 17.08 3.5 8 3.5 13 10.5l61 82h222v72H629q-11 0-21-5t-17-14l-37-50-116 184q-5 8-13.06 12.5-8.07 4.5-16.94 4.5-9.9 0-18.45-5.5Q381-395 376-403l-62-113H96Z',
 })
+
+const PULSE_STATUS = Object.freeze({ idle:'idle', think:'thinking', tool:'tool', run:'running', flat:'stalled' })
+const PULSE_HEIGHT = 22
 
 function MaterialSymbol({ path, size = 20 }) {
   return h('svg', {
@@ -146,6 +158,210 @@ function ApplicationRail({ collapsed, renderSlot, sessionSource, workspaceSource
       h('div', { key:'footer-actions', className:'dsh-rice-slot' }, renderSlot('sidebar.footer.action', { wide:false })),
       h('div', { key:'settings', className:'dsh-rice-slot' }, renderSlot('sidebar.settings', { wide:false })),
     ]),
+  ])
+}
+
+function semanticPulseInk(mode) {
+  const style = getComputedStyle(document.body)
+  const token = mode === 'tool'
+    ? '--dsw-alias-state-warn-primary'
+    : mode === 'flat'
+      ? '--dsw-alias-state-error-primary'
+      : mode === 'idle'
+        ? '--dsw-alias-label-tertiary'
+        : '--dsw-alias-brand-primary'
+  const value = style.getPropertyValue(token).trim()
+  return value === '' ? style.color : value
+}
+
+function SessionPulse({ session, useProjection }) {
+  const projected = useProjection('sessionStats')
+  const sessionRef = React.useRef(session)
+  const projectedStepsRef = React.useRef(projected?.steps)
+  const samplesRef = React.useRef(Object.freeze([]))
+  const bpmRef = React.useRef(PULSE_DEFAULTS.floorBpm)
+  const targetRef = React.useRef(PULSE_DEFAULTS.floorBpm)
+  const modeRef = React.useRef('idle')
+  const reducedRef = React.useRef(false)
+  const staticPaintRef = React.useRef(null)
+  const inkRef = React.useRef('')
+  const [ui, setUi] = React.useState({ bpm:PULSE_DEFAULTS.floorBpm, mode:'idle' })
+  sessionRef.current = session
+  projectedStepsRef.current = projected?.steps
+
+  React.useEffect(() => {
+    const tick = () => {
+      const now = performance.now()
+      const signal = derivePulseSignal(sessionRef.current, projectedStepsRef.current, Date.now())
+      samplesRef.current = updatePulseSamples(samplesRef.current, signal.steps, now)
+      const activity = derivePulseActivity(signal, samplesRef.current, now)
+      targetRef.current = activity.targetBpm
+      modeRef.current = activity.mode
+      inkRef.current = semanticPulseInk(activity.mode)
+      if (reducedRef.current) {
+        bpmRef.current = activity.targetBpm === 0 ? PULSE_DEFAULTS.floorBpm : activity.targetBpm
+        staticPaintRef.current?.()
+      }
+      setUi({ bpm:activity.mode === 'flat' ? 0 : Math.round(bpmRef.current), mode:activity.mode })
+    }
+    tick()
+    const id = window.setInterval(tick, 1_000)
+    return () => { window.clearInterval(id) }
+  }, [])
+
+  const canvasRef = React.useRef(null)
+  React.useEffect(() => {
+    const canvas = canvasRef.current
+    if (canvas === null) return
+    const context = canvas.getContext('2d')
+    if (context === null) return
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+    reducedRef.current = reduced
+    inkRef.current = semanticPulseInk(modeRef.current)
+
+    let width = 640
+    let dpr = window.devicePixelRatio || 1
+    let trace = []
+    let lastScanX = -1
+    let lastReal = 0
+    let displayNow = 0
+    let framePeriodMs = 16.7
+    let raf = 0
+    const timeline = new PulseTimeline(0, bpmRef.current, 30)
+
+    const applySize = () => {
+      const measured = Math.round(canvas.getBoundingClientRect().width)
+      width = Math.max(100, measured || width)
+      dpr = window.devicePixelRatio || 1
+      canvas.width = Math.max(1, Math.round(width * dpr))
+      canvas.height = Math.max(1, Math.round(PULSE_HEIGHT * dpr))
+      trace = []
+      lastScanX = -1
+    }
+
+    const drawTrace = (ink, scanX = null) => {
+      context.setTransform(dpr, 0, 0, dpr, 0, 0)
+      context.clearRect(0, 0, width, PULSE_HEIGHT)
+      if (trace.length === 0) return
+      context.beginPath()
+      for (let x = 0; x < trace.length; x += 1) {
+        if (x === 0) context.moveTo(x, trace[x])
+        else context.lineTo(x, trace[x])
+      }
+      context.strokeStyle = ink
+      context.lineWidth = 1.4
+      context.lineJoin = 'round'
+      context.lineCap = 'round'
+      context.stroke()
+      if (scanX !== null) {
+        context.globalAlpha = 0.16
+        context.fillStyle = ink
+        context.fillRect(scanX - 4, 0, 8, PULSE_HEIGHT)
+        context.globalAlpha = 0.9
+        context.fillRect(scanX - 1, 0, 2, PULSE_HEIGHT)
+        context.globalAlpha = 1
+      }
+    }
+
+    const paintStatic = () => {
+      applySize()
+      const bpm = Math.max(PULSE_DEFAULTS.floorBpm, targetRef.current)
+      const seconds = width / PULSE_DEFAULTS.paperSpeedPxPerSecond
+      const cycles = seconds * bpm / 60
+      const middle = PULSE_HEIGHT / 2
+      const amplitude = PULSE_HEIGHT * 0.45
+      trace = new Array(width + 1)
+      for (let x = 0; x <= width; x += 1) {
+        const phase = ((x / Math.max(1, width)) * cycles) % 1
+        trace[x] = modeRef.current === 'flat' ? middle : middle - ecgValue(phase) * amplitude
+      }
+      drawTrace(inkRef.current || semanticPulseInk(modeRef.current))
+    }
+    staticPaintRef.current = paintStatic
+
+    applySize()
+    let observer = null
+    const onResize = () => { applySize(); if (reduced) paintStatic() }
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(onResize)
+      observer.observe(canvas)
+    } else {
+      window.addEventListener('resize', onResize)
+    }
+
+    const paint = now => {
+      if (lastReal === 0) {
+        lastReal = now
+        displayNow = now
+        timeline.reset(now / 1_000, bpmRef.current, 30)
+      }
+      const realDt = Math.max(0, (now - lastReal) / 1_000)
+      lastReal = now
+      if (realDt > 0 && realDt < 0.05) framePeriodMs = realDt * 1_000
+      const dt = framePeriodMs / 1_000
+      displayNow += framePeriodMs
+      bpmRef.current = advancePulseBpm(bpmRef.current, targetRef.current, dt)
+      const tNow = displayNow / 1_000
+      timeline.advance(tNow, bpmRef.current)
+      const sweepPeriod = width / PULSE_DEFAULTS.paperSpeedPxPerSecond
+      timeline.trimBefore(tNow - 2 * sweepPeriod - 2)
+      const tInSweep = ((tNow % sweepPeriod) + sweepPeriod) % sweepPeriod
+      const scanX = width - tInSweep * PULSE_DEFAULTS.paperSpeedPxPerSecond
+      const scanXInt = Math.round(scanX)
+      const middle = PULSE_HEIGHT / 2
+      const amplitude = PULSE_HEIGHT * 0.45
+      const sampleY = x => {
+        if (modeRef.current === 'flat') return middle
+        let peak = Number.NEGATIVE_INFINITY
+        for (let sub = 0; sub < 4; sub += 1) {
+          const sampleTime = (tNow - tInSweep) - (width - (x + sub * 0.25)) / PULSE_DEFAULTS.paperSpeedPxPerSecond
+          const phase = timeline.phaseAt(sampleTime)
+          const wrapped = phase - Math.floor(phase)
+          peak = Math.max(peak, ecgValue(wrapped))
+        }
+        return middle - peak * amplitude
+      }
+
+      if (trace.length !== width + 1) {
+        trace = new Array(width + 1)
+        for (let x = 0; x <= width; x += 1) trace[x] = sampleY(x)
+        lastScanX = scanXInt
+      } else if (lastScanX > scanXInt) {
+        for (let x = scanXInt; x <= lastScanX && x <= width; x += 1) trace[x] = sampleY(x)
+        lastScanX = scanXInt
+      } else if (lastScanX < scanXInt) {
+        trace[scanXInt] = sampleY(scanXInt)
+        lastScanX = scanXInt
+      }
+      drawTrace(inkRef.current || semanticPulseInk(modeRef.current), scanX)
+    }
+
+    if (reduced) {
+      paintStatic()
+    } else {
+      const loop = now => { paint(now); raf = requestAnimationFrame(loop) }
+      raf = requestAnimationFrame(loop)
+    }
+
+    return () => {
+      staticPaintRef.current = null
+      if (observer !== null) observer.disconnect()
+      else window.removeEventListener('resize', onResize)
+      if (raf !== 0) cancelAnimationFrame(raf)
+    }
+  }, [])
+
+  const status = PULSE_STATUS[ui.mode]
+  const pulseText = ui.mode === 'flat' ? '0 bpm' : `${ui.bpm} bpm`
+  return h('div', {
+    'data-dsh-rice-pulse':'',
+    'data-mode':ui.mode,
+    role:'group',
+    'aria-label':`Session activity pulse: ${pulseText}, ${status}`,
+  }, [
+    h('span', { key:'bpm', className:'dsh-rice-pulse-bpm' }, pulseText),
+    h('span', { key:'paper', className:'dsh-rice-pulse-paper' }, h('canvas', { ref:canvasRef, className:'dsh-rice-pulse-canvas', 'aria-hidden':true })),
+    h('span', { key:'status', className:'dsh-rice-pulse-status' }, status),
   ])
 }
 
@@ -265,4 +481,7 @@ export function apply(ctx) {
     name:'shell.overlay', id:'dsh-rice.switcher', order:20,
     inject:() => ({ uiState, sessionSource:ctx.sessions.list, workspaceSource:ctx.workspaces.list, openSession:id => { ctx.sessions.open(id) }, startSession:() => { ctx.workspaces.startSession() } }),
   }, QuickSwitcherOverlay))
+  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
+    name:'conversation.input.dock', id:'dsh-rice.pulse', order:20,
+  }, SessionPulse))
 }

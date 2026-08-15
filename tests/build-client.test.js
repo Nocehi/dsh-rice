@@ -41,7 +41,7 @@ test('browser artifact is an rc.6-style namespace module using only public DSH W
       assert.fail(`unexpected browser platform require ${name}`)
     }))
   } } }
-  vm.runInNewContext(source, { window, console, Set, Map, Object, Number, String, Array })
+  vm.runInNewContext(source, { window, console, Set, Map, Object, Number, String, Array, Date, Math })
   const namespace = loaded.get('dsh-rice')
   assert.equal(typeof namespace, 'object')
   assert.deepEqual(Object.keys(namespace).sort(), ['COMMAND_IDS','apply','inject'])
@@ -83,6 +83,21 @@ test('rice-owned presentation uses semantic soft regions and distinct accessible
   assert.match(source, /'aria-current':row\.current \? 'page' : undefined/u)
   assert.match(source, /onFocus:\(\) => \{ setActiveIndex\(index\) \}/u)
   assert.match(source, /'aria-live':'polite'/u)
+})
+
+test('session pulse is an additive input-dock surface with separated activity and temporal models', async () => {
+  const source = await artifact()
+  const css = cssFrom(source)
+  assert.match(source, /ctx\.slots\.inject\('conversation\.input\.dock'/u)
+  assert.match(source, /name:'conversation\.input\.dock', id:'dsh-rice\.pulse', order:20/u)
+  assert.match(source, /derivePulseSignal\(sessionRef\.current, projectedStepsRef\.current, Date\.now\(\)\)/u)
+  assert.match(source, /derivePulseActivity\(signal, samplesRef\.current, now\)/u)
+  assert.match(source, /const timeline = new PulseTimeline/u)
+  assert.match(source, /PULSE_DEFAULTS\.paperSpeedPxPerSecond/u)
+  assert.match(source, /prefers-reduced-motion: reduce/u)
+  assert.match(css, /\[data-dsh-rice-pulse\].*?background:var\(--dsw-specific-selector\)/su)
+  assert.match(css, /data-mode="tool".*?--dsw-alias-state-warn-primary/su)
+  assert.match(css, /data-mode="flat".*?--dsw-alias-state-error-primary/su)
 })
 
 test('browser artifact keeps Activity distinct from the full session switcher', async () => {
