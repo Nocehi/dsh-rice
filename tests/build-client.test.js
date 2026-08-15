@@ -26,11 +26,15 @@ test('browser artifact is rc.6-style namespace module with React as its only req
   assert.deepEqual([...namespace.inject], ['slots','layout','sessions','workspaces'])
 })
 
-test('browser artifact embeds 20px Material Symbols Rounded rail SVGs instead of font glyph marks', async () => {
+test('browser artifact uses vanilla 36px rail controls with optically sized Material Symbols Rounded glyphs', async () => {
   await execFileAsync(process.execPath, ['scripts/build-client.mjs'], { cwd:process.cwd() })
   const artifact = await readFile('lib/client.js', 'utf8')
-  assert.match(artifact, /dsh-rice-rail-icon/u)
+  assert.match(artifact, /dsh-rice-rail-button \{ position:relative; width:36px; height:36px/u)
+  assert.match(artifact, /dsh-rice-rail-icon \{ display:block; fill:currentColor; \}/u)
   assert.match(artifact, /viewBox:'0 -960 960 960'/u)
+  assert.match(artifact, /key:'switcher'.*?iconSize:22/su)
+  assert.match(artifact, /key:'new'.*?iconSize:24/su)
+  assert.match(artifact, /key:'attention'.*?iconSize:20/su)
   assert.match(artifact, new RegExp(SEARCH_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'))
   assert.match(artifact, new RegExp(ADD_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'))
   assert.match(artifact, new RegExp(BROWSE_ACTIVITY_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'))
