@@ -15,11 +15,14 @@ const CSS = `
 [data-dsh-rice-switcher] { position:absolute; inset:0; z-index:100; display:grid; place-items:start center; padding:min(12vh,104px) 16px 16px; box-sizing:border-box; pointer-events:auto; font-family:var(--dsw-font-family,sans-serif); color:var(--dsw-alias-label-primary,#e8e8e8); }
 [data-dsh-rice-switcher] .dsh-rice-backdrop { position:absolute; inset:0; border:0; border-radius:0; background:rgba(0,0,0,.34); backdrop-filter:blur(2px); cursor:default; }
 [data-dsh-rice-switcher] .dsh-rice-panel { position:relative; width:min(720px,calc(100vw - 32px)); max-height:min(72vh,760px); display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--dsw-alias-border-l2-darkmode-thin,rgba(127,127,127,.24)); border-radius:18px; background:var(--dsw-alias-bg-base,#181818); box-shadow:var(--dsw-shadow-lv2,0 18px 60px rgba(0,0,0,.34)); }
-[data-dsh-rice-switcher] .dsh-rice-topline { display:flex; align-items:center; gap:8px; padding:12px; border-bottom:1px solid var(--dsw-alias-border-l2-darkmode-thin,rgba(127,127,127,.18)); }
+[data-dsh-rice-switcher] .dsh-rice-topline { display:flex; align-items:center; gap:10px; padding:12px; border-bottom:1px solid var(--dsw-alias-border-l2-darkmode-thin,rgba(127,127,127,.18)); }
+[data-dsh-rice-switcher] .dsh-rice-mode-title { flex:0 0 auto; color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); font-size:12px; line-height:24px; font-weight:700; }
 [data-dsh-rice-switcher] .dsh-rice-search { min-width:0; flex:1; border:0; outline:0; background:transparent; color:inherit; font-size:16px; line-height:24px; }
 [data-dsh-rice-switcher] .dsh-rice-new { border:0; border-radius:10px; padding:7px 10px; background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.14)); color:inherit; cursor:pointer; white-space:nowrap; }
 [data-dsh-rice-switcher] .dsh-rice-list { overflow:auto; padding:8px; scrollbar-gutter:stable; }
-[data-dsh-rice-switcher] .dsh-rice-group-label { padding:9px 10px 5px; color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); font-size:11px; line-height:16px; font-weight:650; letter-spacing:.03em; }
+[data-dsh-rice-switcher] .dsh-rice-group-label { padding:9px 10px 5px; color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); font-size:11px; line-height:16px; }
+[data-dsh-rice-switcher] .dsh-rice-group-name { font-weight:650; letter-spacing:.03em; }
+[data-dsh-rice-switcher] .dsh-rice-group-path { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:400; letter-spacing:0; opacity:.82; }
 [data-dsh-rice-switcher] .dsh-rice-row { width:100%; min-height:48px; box-sizing:border-box; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:8px 10px; border:0; border-radius:12px; background:transparent; color:inherit; text-align:left; cursor:pointer; }
 [data-dsh-rice-switcher] .dsh-rice-row:hover,[data-dsh-rice-switcher] .dsh-rice-row[data-active="true"] { background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.14)); }
 [data-dsh-rice-switcher] .dsh-rice-row-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; line-height:20px; }
@@ -135,6 +138,12 @@ function statusLabel(row) {
   return ''
 }
 
+function rowMeta(row, group) {
+  if (row.agentPreset) return row.agentPreset
+  if (group.path !== '' && row.cwd === group.path) return ''
+  return row.cwd || row.workspace
+}
+
 function QuickSwitcherOverlay({ uiState, sessionSource, workspaceSource, openSession, startSession }) {
   const ui = useSource(uiState)
   const sessions = useSource(sessionSource)
@@ -142,7 +151,8 @@ function QuickSwitcherOverlay({ uiState, sessionSource, workspaceSource, openSes
   const inputRef = React.useRef(null)
   const [activeIndex, setActiveIndex] = React.useState(0)
   const allGroups = React.useMemo(() => deriveSessionGroups(sessions, workspaces, ui.query), [sessions, workspaces, ui.query])
-  const groups = React.useMemo(() => ui.mode === 'attention' && ui.query.trim() === '' ? overviewGroups(allGroups) : allGroups, [allGroups, ui.mode, ui.query])
+  const attentionMode = ui.mode === 'attention'
+  const groups = React.useMemo(() => attentionMode ? overviewGroups(allGroups) : allGroups, [allGroups, attentionMode])
   const rows = React.useMemo(() => flattenGroups(groups), [groups])
   React.useEffect(() => {
     if (!ui.open) return
@@ -160,25 +170,32 @@ function QuickSwitcherOverlay({ uiState, sessionSource, workspaceSource, openSes
     if (event.key === 'Enter' && rows[activeIndex] !== undefined) { event.preventDefault(); activate(rows[activeIndex]) }
   }
   let rowCursor = 0
+  const panelLabel = attentionMode ? 'Session activity' : 'Session switcher'
+  const placeholder = attentionMode ? 'Search activity' : 'Search visible sessions'
   return h('div', { 'data-dsh-rice-switcher':'', role:'presentation' }, [
     h('style', { key:'style' }, CSS),
-    h('button', { key:'backdrop', type:'button', className:'dsh-rice-backdrop', 'aria-label':'Close session switcher', onClick:() => { uiState.close() } }),
-    h('section', { key:'panel', className:'dsh-rice-panel', role:'dialog', 'aria-modal':true, 'aria-label':ui.mode === 'attention' ? 'Session activity' : 'Session switcher' }, [
+    h('button', { key:'backdrop', type:'button', className:'dsh-rice-backdrop', 'aria-label':`Close ${panelLabel.toLowerCase()}`, onClick:() => { uiState.close() } }),
+    h('section', { key:'panel', className:'dsh-rice-panel', role:'dialog', 'aria-modal':true, 'aria-label':panelLabel }, [
       h('div', { key:'top', className:'dsh-rice-topline' }, [
-        h('input', { key:'input', ref:inputRef, className:'dsh-rice-search', type:'search', value:ui.query, placeholder:'Search visible sessions', 'aria-label':'Search visible sessions', onChange:event => { uiState.setQuery(event.currentTarget.value); setActiveIndex(0) }, onKeyDown }),
-        h('button', { key:'new', type:'button', className:'dsh-rice-new', onClick:() => { uiState.close(); startSession() } }, '+ New session'),
+        h('div', { key:'mode', className:'dsh-rice-mode-title' }, attentionMode ? 'Activity' : 'Sessions'),
+        h('input', { key:'input', ref:inputRef, className:'dsh-rice-search', type:'search', value:ui.query, placeholder, 'aria-label':placeholder, onChange:event => { uiState.setQuery(event.currentTarget.value); setActiveIndex(0) }, onKeyDown }),
+        attentionMode ? null : h('button', { key:'new', type:'button', className:'dsh-rice-new', onClick:() => { uiState.close(); startSession() } }, '+ New session'),
       ]),
       h('div', { key:'list', className:'dsh-rice-list' }, groups.length === 0
-        ? h('div', { className:'dsh-rice-empty' }, ui.mode === 'attention' && ui.query.trim() === '' ? 'No active or attention-needed sessions.' : 'No matching sessions.')
+        ? h('div', { className:'dsh-rice-empty' }, attentionMode ? 'No active or attention-needed sessions.' : 'No matching sessions.')
         : groups.flatMap(group => {
-          const label = h('div', { key:`g:${group.key}`, className:'dsh-rice-group-label' }, group.label)
+          const label = h('div', { key:`g:${group.key}`, className:'dsh-rice-group-label' }, [
+            h('div', { key:'name', className:'dsh-rice-group-name' }, group.label),
+            group.path ? h('div', { key:'path', className:'dsh-rice-group-path' }, group.path) : null,
+          ])
           const items = group.sessions.map(row => {
             const index = rowCursor++
             const status = statusLabel(row)
+            const meta = rowMeta(row, group)
             return h('button', { key:`s:${row.id}`, type:'button', className:'dsh-rice-row', 'data-active':index === activeIndex ? 'true' : undefined, onMouseEnter:() => { setActiveIndex(index) }, onClick:() => { activate(row) } }, [
               h('span', { key:'copy', style:{ minWidth:0 } }, [
-                h('div', { key:'title', className:'dsh-rice-row-title' }, `${row.current ? '● ' : ''}${row.title}`),
-                h('div', { key:'meta', className:'dsh-rice-row-meta' }, row.cwd || row.workspace),
+                h('div', { key:'title', className:'dsh-rice-row-title' }, row.title),
+                meta ? h('div', { key:'meta', className:'dsh-rice-row-meta' }, meta) : null,
               ]),
               h('span', { key:'status', className:'dsh-rice-status' }, status),
             ])
