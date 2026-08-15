@@ -1,0 +1,51 @@
+{
+  "name": "dsh-rice",
+  "version": "0.1.0",
+  "description": "Presentation experiments for DeepSeek Harness Web",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./client": "./lib/client.js",
+    "./core": "./src/core.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "scripts/build-client.mjs",
+    "examples",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build-client.mjs",
+    "prepare": "npm run build",
+    "test": "npm run build && node --test tests/core.test.js tests/build-client.test.js tests/apply.test.js",
+    "check": "node --check src/index.js && node --check src/core.js && node --check src/client.js && node --check scripts/build-client.mjs && npm test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@10.9.8",
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nocehi/dsh-rice.git"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-layout"
+      ],
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}
