@@ -1,0 +1,9 @@
+# v0 keeps AppFrame's contract-frozen 56px collapsed track, but replaces the
+# upstream SidebarRoot occupant. The original ui-sidebar MUST stay disabled:
+# `sidebar` is a single slot and dsh-rice fails loud on double ownership.
+- id: ui-sidebar
+  disabled: true
+
+- insert:
+    - id: dsh-rice
+      name: dsh-rice
