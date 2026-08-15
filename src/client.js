@@ -29,6 +29,10 @@ const CSS = `
 [data-dsh-rice-switcher] .dsh-rice-row-meta { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); font-size:11px; line-height:16px; }
 [data-dsh-rice-switcher] .dsh-rice-status { color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); font-size:11px; line-height:16px; white-space:nowrap; }
 [data-dsh-rice-switcher] .dsh-rice-empty { padding:28px 18px; color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); text-align:center; font-size:13px; }
+/* rc.6 compatibility: upstream Tooltip pairs semantic tooltip-bg with a static white foreground.
+   Use the existing semantic inverse foreground so theme providers may change inverse_surface safely.
+   Remove this shim once upstream Tooltip consumes --dsw-alias-label-primary-inverted itself. */
+span[role="tooltip"] { color:var(--dsw-alias-label-primary-inverted,#fff); }
 `
 
 const h = React.createElement

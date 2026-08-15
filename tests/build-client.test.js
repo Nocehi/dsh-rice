@@ -26,6 +26,15 @@ test('browser artifact is rc.6-style namespace module with React as its only req
   assert.deepEqual([...namespace.inject], ['slots','layout','sessions','workspaces'])
 })
 
+test('browser artifact repairs rc.6 tooltip foreground with the semantic inverse token', async () => {
+  await execFileAsync(process.execPath, ['scripts/build-client.mjs'], { cwd:process.cwd() })
+  const artifact = await readFile('lib/client.js', 'utf8')
+  // The element+attribute selector deliberately outranks upstream Tooltip's CSS-module class.
+  assert.match(artifact, /span\[role="tooltip"\] \{ color:var\(--dsw-alias-label-primary-inverted,#fff\); \}/u)
+  // Compatibility must not mutate the stock static palette to make one component readable.
+  assert.doesNotMatch(artifact, /--dsw-static-neutral-bluish-00\s*:/u)
+})
+
 test('browser artifact uses vanilla 36px rail controls with optically sized Material Symbols Rounded glyphs', async () => {
   await execFileAsync(process.execPath, ['scripts/build-client.mjs'], { cwd:process.cwd() })
   const artifact = await readFile('lib/client.js', 'utf8')
