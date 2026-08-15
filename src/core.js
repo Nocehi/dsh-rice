@@ -115,6 +115,7 @@ export function deriveSessionGroups(sessionState, workspaceState, query = '') {
     if (visible.length > 0) groups.push(Object.freeze({
       key: workspace.workspaceId,
       label: workspaceLabel(workspace),
+      path: text(workspace.path),
       workspaceId: workspace.workspaceId,
       sessions: Object.freeze(visible),
     }))
@@ -132,6 +133,7 @@ export function deriveSessionGroups(sessionState, workspaceState, query = '') {
   if (visibleLoose.length > 0) groups.push(Object.freeze({
     key: UNGROUPED_KEY,
     label: UNGROUPED_LABEL,
+    path: '',
     workspaceId: undefined,
     sessions: Object.freeze(visibleLoose),
   }))
