@@ -32,21 +32,21 @@ function context(sidebarEntries = []) {
   }
 }
 
-test('apply replaces sidebar, adds shell overlay, and contributes a bounded conversation pulse', async () => {
+test('apply replaces sidebar, adds shell overlay, and contributes composer-footer session telemetry', async () => {
   const client = await namespace()
   const ctx = context()
   client.apply(ctx)
   assert.equal(ctx.registrations.length, 3)
   const sidebar = ctx.registrations.find(item => item.options.name === 'sidebar')
   const overlay = ctx.registrations.find(item => item.options.name === 'shell.overlay')
-  const pulse = ctx.registrations.find(item => item.options.name === 'conversation.input.dock')
+  const pulse = ctx.registrations.find(item => item.options.name === 'conversation.composer.dock')
   assert.ok(sidebar)
   assert.ok(overlay)
   assert.ok(pulse)
   assert.deepEqual(Object.keys(sidebar.options.children).sort(), ['sidebar.footer.action','sidebar.settings','sidebar.workspaces'])
   assert.equal(overlay.options.id, 'dsh-rice.switcher')
   assert.equal(pulse.options.id, 'dsh-rice.pulse')
-  assert.equal(pulse.options.order, 20)
+  assert.equal(pulse.options.order, -10)
 })
 
 test('apply fails loud when upstream ui-sidebar still occupies the single slot', async () => {
