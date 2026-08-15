@@ -19,7 +19,10 @@ function fixtures() {
 test('product-visible projection excludes archive, subagents, and non-current blank rows', () => {
   const { sessions, workspaces } = fixtures()
   const groups = deriveSessionGroups(sessions, workspaces)
-  assert.deepEqual(groups.map(group => [group.label, group.sessions.map(row => row.id)]), [['dsh-rice',['s-a','s-current']],['Ungrouped',['s-loose']]])
+  assert.deepEqual(groups.map(group => [group.label, group.path, group.sessions.map(row => row.id)]), [
+    ['dsh-rice','/repo/a',['s-a','s-current']],
+    ['Ungrouped','',['s-loose']],
+  ])
 })
 
 test('search is local metadata fuzzy matching and never resurrects hidden rows', () => {
@@ -36,6 +39,7 @@ test('attention and overview stay derived projections of the same visible corpus
   const groups = deriveSessionGroups(sessions, workspaces)
   assert.equal(attentionCount(groups), 2)
   assert.deepEqual(flattenGroups(overviewGroups(groups)).map(row => row.id), ['s-a','s-current','s-loose'])
+  assert.equal(overviewGroups(groups)[0].path, '/repo/a')
 })
 
 test('MRU helpers never invent a second corpus', () => {
