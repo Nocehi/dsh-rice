@@ -59,13 +59,20 @@ export function derivePulseSignal(session, projectedSteps, nowEpochMs = Date.now
   })
 }
 
-/** Keep only step-count changes inside the bounded activity window; a counter reset starts a new window. */
+/** Keep a single pre-cutoff baseline plus step-count changes inside the bounded activity window. */
 export function updatePulseSamples(samples, steps, nowMs, windowMs = PULSE_DEFAULTS.activityWindowMs) {
   const now = Number.isFinite(nowMs) ? nowMs : 0
   const value = Number.isFinite(steps) ? Math.max(0, steps) : 0
-  const next = (Array.isArray(samples) ? samples : [])
-    .filter(sample => Number.isFinite(sample?.t) && Number.isFinite(sample?.steps) && now - sample.t <= windowMs)
-    .map(sample => ({ t: sample.t, steps: sample.steps }))
+  const cutoff = now - windowMs
+  let baseline
+  const next = []
+  for (const sample of Array.isArray(samples) ? samples : []) {
+    if (!Number.isFinite(sample?.t) || !Number.isFinite(sample?.steps) || sample.t > now) continue
+    const copy = { t: sample.t, steps: sample.steps }
+    if (sample.t < cutoff) baseline = copy
+    else next.push(copy)
+  }
+  if (baseline !== undefined) next.unshift(baseline)
   const last = next[next.length - 1]
   if (last === undefined) return Object.freeze([Object.freeze({ t: now, steps: value })])
   if (value < last.steps) return Object.freeze([Object.freeze({ t: now, steps: value })])
@@ -97,10 +104,12 @@ export function derivePulseActivity(signal, samples, nowMs, config = PULSE_DEFAU
   return Object.freeze({ targetBpm, mode, stepRate })
 }
 
-/** Advance the displayed rate by a constant BPM/second ramp so target changes do not snap the trace. */
+/** Advance the displayed non-flat rate by a constant ramp while preserving the configured idle floor. */
 export function advancePulseBpm(currentBpm, targetBpm, dtSeconds, config = PULSE_DEFAULTS) {
-  const current = Number.isFinite(currentBpm) ? currentBpm : config.floorBpm
-  const target = Number.isFinite(targetBpm) ? targetBpm : config.floorBpm
+  const requested = Number.isFinite(targetBpm) ? targetBpm : config.floorBpm
+  if (requested <= 0) return config.floorBpm
+  const current = Math.max(config.floorBpm, Number.isFinite(currentBpm) ? currentBpm : config.floorBpm)
+  const target = Math.max(config.floorBpm, requested)
   const dt = Number.isFinite(dtSeconds) ? Math.max(0, dtSeconds) : 0
   const step = config.rampBpmPerSecond * dt
   const diff = target - current
