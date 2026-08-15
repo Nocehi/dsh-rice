@@ -48,7 +48,7 @@ const CSS = `
 [data-dsh-rice-switcher] .dsh-rice-row[data-current="true"] .dsh-rice-status { color:var(--dsw-alias-brand-primary); font-weight:650; }
 [data-dsh-rice-switcher] .dsh-rice-empty { padding:32px 20px; color:var(--dsw-alias-label-secondary); text-align:center; font-size:13px; line-height:20px; }
 [data-dsh-rice-switcher] .dsh-rice-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
-[data-dsh-rice-pulse] { --dsh-rice-pulse-ink:var(--dsw-alias-label-tertiary); box-sizing:border-box; width:100%; height:28px; min-height:28px; display:grid; grid-template-columns:52px minmax(100px,1fr) 72px; align-items:center; gap:10px; margin:4px 0; padding:0 10px; border:0; border-radius:12px; background:var(--dsw-specific-selector); color:var(--dsw-alias-label-secondary); font-family:var(--dsw-font-family,sans-serif); overflow:hidden; }
+[data-dsh-rice-pulse] { --dsh-rice-pulse-ink:var(--dsw-alias-label-tertiary); box-sizing:border-box; width:100%; max-width:var(--dsh-chat-content-width); height:28px; min-height:28px; display:grid; grid-template-columns:52px minmax(100px,1fr) 72px; align-items:center; gap:10px; margin:6px auto 0; padding:0 10px; border:0; border-radius:12px; background:var(--dsw-specific-selector); color:var(--dsw-alias-label-secondary); font-family:var(--dsw-font-family,sans-serif); overflow:hidden; }
 [data-dsh-rice-pulse][data-mode="think"],[data-dsh-rice-pulse][data-mode="run"] { --dsh-rice-pulse-ink:var(--dsw-alias-brand-primary); }
 [data-dsh-rice-pulse][data-mode="tool"] { --dsh-rice-pulse-ink:var(--dsw-alias-state-warn-primary); }
 [data-dsh-rice-pulse][data-mode="flat"] { --dsh-rice-pulse-ink:var(--dsw-alias-state-error-primary); }
@@ -481,7 +481,7 @@ export function apply(ctx) {
     name:'shell.overlay', id:'dsh-rice.switcher', order:20,
     inject:() => ({ uiState, sessionSource:ctx.sessions.list, workspaceSource:ctx.workspaces.list, openSession:id => { ctx.sessions.open(id) }, startSession:() => { ctx.workspaces.startSession() } }),
   }, QuickSwitcherOverlay))
-  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
-    name:'conversation.input.dock', id:'dsh-rice.pulse', order:20,
+  ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
+    name:'conversation.composer.dock', id:'dsh-rice.pulse', order:-10,
   }, SessionPulse))
 }

@@ -1,8 +1,11 @@
 # Session activity pulse
 
 `dsh-rice` contributes a small, read-only activity pulse to the existing
-`conversation.input.dock` list slot. The surface does not own Session state,
-create a second activity log, or change model/tool execution.
+`conversation.composer.dock` list slot. It is session telemetry in the
+InputBar footer, not a composer-context card: the pulse sits below the input
+card and before the upstream StatsLine, and the blank-session hero does not
+render it. The surface does not own Session state, create a second activity
+log, or change model/tool execution.
 
 ## Layers
 
@@ -35,9 +38,16 @@ specific provider.
 
 The slot choice was checked against public `deepseek-ai/deepseek-harness` at
 `47f943859bef60e4160492346772ded9b24f765a`. At that revision,
-`conversation.input.dock` is an additive session-scoped list slot intended for
-full-width rows above the composer card. The shipped Goal surface occupies the
-same list at order 10; `dsh-rice.pulse` registers at order 20.
+`conversation.composer.dock` is an additive session-scoped list rendered by
+ConversationRoot as the InputBar footer only outside the blank hero. Upstream
+StatsLine occupies that list at order 0; `dsh-rice.pulse` registers at order
+-10 so the visual order is input card → pulse → StatsLine.
+
+The pulse outer surface is capped by `--dsh-chat-content-width`, the same shared
+conversation width axis used by StatsLine and the content-width composer
+family. It remains responsive below that cap, but widening the browser no
+longer expands the ECG toward viewport width or changes its visible paper
+horizon indefinitely.
 
 `sessionStats` is optional for the pulse. If its `steps` projection is absent,
 the signal layer falls back to counting settled assistant nodes in the current

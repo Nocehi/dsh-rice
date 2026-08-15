@@ -85,16 +85,18 @@ test('rice-owned presentation uses semantic soft regions and distinct accessible
   assert.match(source, /'aria-live':'polite'/u)
 })
 
-test('session pulse is an additive input-dock surface with separated activity and temporal models', async () => {
+test('session pulse is composer-footer telemetry with separated activity and temporal models', async () => {
   const source = await artifact()
   const css = cssFrom(source)
-  assert.match(source, /ctx\.slots\.inject\('conversation\.input\.dock'/u)
-  assert.match(source, /name:'conversation\.input\.dock', id:'dsh-rice\.pulse', order:20/u)
+  assert.match(source, /ctx\.slots\.inject\('conversation\.composer\.dock'/u)
+  assert.match(source, /name:'conversation\.composer\.dock', id:'dsh-rice\.pulse', order:-10/u)
+  assert.doesNotMatch(source, /conversation\.input\.dock'.*?dsh-rice\.pulse/su)
   assert.match(source, /derivePulseSignal\(sessionRef\.current, projectedStepsRef\.current, Date\.now\(\)\)/u)
   assert.match(source, /derivePulseActivity\(signal, samplesRef\.current, now\)/u)
   assert.match(source, /const timeline = new PulseTimeline/u)
   assert.match(source, /PULSE_DEFAULTS\.paperSpeedPxPerSecond/u)
   assert.match(source, /prefers-reduced-motion: reduce/u)
+  assert.match(css, /\[data-dsh-rice-pulse\][^}]*width:100%; max-width:var\(--dsh-chat-content-width\);[^}]*margin:6px auto 0;/u)
   assert.match(css, /\[data-dsh-rice-pulse\].*?background:var\(--dsw-specific-selector\)/su)
   assert.match(css, /data-mode="tool".*?--dsw-alias-state-warn-primary/su)
   assert.match(css, /data-mode="flat".*?--dsw-alias-state-error-primary/su)
