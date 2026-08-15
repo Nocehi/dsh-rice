@@ -16,6 +16,22 @@ span[role="tooltip"] { color:var(--dsw-alias-label-primary-inverted); }
 [data-phase="hero"] [data-composer-seat] svg[viewBox="0 0 1051 468"] ellipse { fill:currentColor; }
 [data-phase="hero"] [data-composer-seat] div:has(> span:first-child > svg[viewBox="0 0 23.16 17.04"]) { position:relative; grid-template-columns:34px auto 0; transform:translateX(5px); }
 [data-phase="hero"] [data-composer-seat] div:has(> span:first-child > svg[viewBox="0 0 23.16 17.04"]) > span:nth-child(3) { position:absolute; justify-self:start; background:transparent; color:var(--dsw-alias-state-business-tertiary); border-color:var(--dsw-alias-border-l2-darkmode-thin); }
+/* rc.6 Chat turn status: upstream pins the shimmer to static DeepSeek blues.
+   Override only the gradient image so upstream timing, clipping, reduced-motion
+   behavior, clock styling, and future locale text remain upstream-owned. The
+   midpoint is derived from the semantic primary/on-primary pair, so Matugen or
+   any other DSH semantic theme can repaint the shimmer without static-palette
+   mutation. */
+[data-conversation-scroll] div[role="status"][aria-live="polite"] {
+  background-image:linear-gradient(
+    90deg,
+    var(--dsw-alias-state-business-primary) 0%,
+    var(--dsw-alias-state-business-primary) 40%,
+    color-mix(in srgb, var(--dsw-alias-state-business-primary) 58%, var(--dsw-alias-label-primary-foreground)) 50%,
+    var(--dsw-alias-state-business-primary) 60%,
+    var(--dsw-alias-state-business-primary) 100%
+  );
+}
 `
 
 const RICE_ADAPTIVE_CSS = `
