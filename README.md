@@ -15,15 +15,17 @@ DSH session/workspace runtime
      dsh-rice
         │
         ├── 56px application rail
-        │     search / new session / activity / footer / settings
+        │     Big Fat Whale / Sessions / New Session / Activity
+        │     footer actions / Settings
         │
         └── transient session surface
               Sessions / Activity
 ```
 
 The current v0 has been physically dogfooded with
-`@deepseek-ai/dsh@0.1.0-rc.6` on DSH Web. Public upstream source used for the
-slot/layout audit is `deepseek-ai/deepseek-harness` at
+`@deepseek-ai/dsh@0.1.0-rc.6` on DSH Web. The current public upstream source
+used for the slot, logo, module-table, and theme-contract audit is
+`deepseek-ai/deepseek-harness` at
 `47f943859bef60e4160492346772ded9b24f765a`.
 
 > `dsh-rice` is an independent experimental project and is not an official
@@ -37,6 +39,7 @@ session navigation into an overlay.
 
 The rail exposes:
 
+- vanilla DSH's **Big Fat Whale** as a passive brand landmark;
 - **Sessions** — opens the full product-visible session switcher;
 - **New Session** — delegates to the existing DSH workspace/session runtime;
 - **Activity** — opens the same transient surface projected to current,
@@ -48,6 +51,59 @@ The rail follows vanilla DSH's 36x36 control-seat rhythm inside the 56px track.
 The embedded Material Symbols are optically sized rather than forced to one
 viewport size: search 22px, add 24px, activity 20px. The upstream Settings
 occupant remains owned by DSH.
+
+## Big Fat Whale
+
+The rail imports `FishLogo` from DSH Web's public
+`@deepseek-ai/dsh-client-ui-primitives` platform module. It does not copy the
+upstream SVG path into this repository.
+
+The mark keeps upstream's native geometry and `currentColor` behavior. Its rice
+seat uses `--dsw-alias-brand-primary`, so stock DSH chooses the normal stock
+brand ink and an optional semantic theme provider can recolor it through the
+same alias.
+
+The Whale is deliberately passive. Vanilla DSH can use it as the collapsed
+sidebar-toggle resting state because vanilla has an expanded workspace tree.
+`dsh-rice` has no expanded tree, so giving the mark a duplicate or misleading
+toggle action would invent product behavior. Sessions and New Session remain
+the adjacent explicit actions.
+
+## Soft-region presentation
+
+Rice-owned hierarchy no longer depends on a full-height rail separator, a
+panel outline, or a full-width header divider.
+
+- the rail is a semantic sidebar surface;
+- the overlay panel is a semantic menu surface with DSH elevation;
+- the search/header controls sit in an inset selector-tonal region;
+- spacing, radius, and tonal state distinguish Workspace groups and rows;
+- borders are reserved for future structures that genuinely require alignment
+  or dense-data separation.
+
+Interaction states remain explicit rather than being softened into ambiguity:
+
+- hover uses DSH hover roles;
+- pressed uses the interactive active role;
+- keyboard-active rows use the navigation-active role;
+- the current Session adds an accent-tonal fill, an inset brand marker, and
+  `aria-current="page"`;
+- focus-visible controls keep a two-pixel semantic brand ring.
+
+Every rice-owned color is supplied by an existing DSH alias/specific variable.
+The package defines no private fixed palette and does not override
+`--dsw-static-*`.
+
+## Rice-owned typography and pacing
+
+The transient surface owns its own compact hierarchy: mode label, search,
+Workspace label/path, Session title/metadata/status, New Session control, and
+empty state. This slice adjusts their leading, padding, and maximum text measure
+inside the overlay only.
+
+Conversation copy, Markdown measure, QuestionComposer, and other upstream
+surfaces remain untouched. `dsh-rice` does not use global CSS selectors or DOM
+patches to restyle them.
 
 ## Session authority
 
@@ -132,9 +188,9 @@ DankMaterialShell / Matugen
 ```
 
 `dsh-matugen` supplies semantic DSH theme variables; `dsh-rice` consumes the
-same variables because its surfaces are ordinary DSH-themed UI. There is no
-direct import, RPC, filesystem dependency, or wallpaper knowledge between the
-two packages. `dsh-rice` also works with stock DSH themes.
+same variables because its surfaces and Whale ink are ordinary DSH-themed UI.
+There is no direct import, RPC, filesystem dependency, or wallpaper knowledge
+between the two packages. `dsh-rice` also works with stock DSH themes.
 
 This separation is intentional: a component that still pins a stock
 `--dsw-static-deepseek-*` color remains an upstream/theme-seam issue, not a
@@ -166,9 +222,10 @@ window.__ModuleLoader__.load({ id: "dsh-rice", factory })
 ```
 
 The source plugin exports `inject` and `apply` as sibling namespace exports and
-has no default export. React is resolved from the DSH Web module table at
-runtime; the repo-local builder emits `lib/client.js` without adding a browser
-package-loader boundary.
+has no default export. React and
+`@deepseek-ai/dsh-client-ui-primitives` are resolved from DSH Web's frozen
+public platform module table; the repo-local builder emits `lib/client.js`
+without adding a browser package-loader boundary.
 
 Git installs run the builder through `prepare`.
 
@@ -182,7 +239,13 @@ The current suite covers:
 
 - fail-loud single-slot ownership;
 - rc.6 namespace-module artifact shape;
-- embedded Material Symbols and optical rail geometry;
+- React plus DSH UI primitives as the only browser requires;
+- upstream `FishLogo` reuse and 24px Whale geometry;
+- 56px rail / 36px control seats and optical Material glyph geometry;
+- semantic-only rice colors with no `--dsw-static-*` or fixed-color fallback;
+- soft-region removal of the rail/header structural dividers;
+- distinct hover, active, current, and focus-visible contracts;
+- current-session ARIA and keyboard-active announcements;
 - archive/subagent/non-current-blank exclusion;
 - local metadata fuzzy search;
 - Activity as a projection of the same visible corpus;
@@ -190,26 +253,27 @@ The current suite covers:
 - MRU helpers without a second corpus.
 
 Repository CI may be unavailable when the account's GitHub Actions spending
-limit prevents a job from starting. Physical rc.6 dogfood has therefore been a
+limit prevents a job from starting. Physical rc.6 dogfood is therefore a
 separate evidence boundary rather than being represented as CI coverage.
 
 ## Documentation
 
-- [`docs/architecture.md`](docs/architecture.md) — slot, state, theme and
-  lifecycle boundaries;
+- [`docs/architecture.md`](docs/architecture.md) — slot, state, theme, module,
+  typography, and lifecycle boundaries;
 - [`docs/v0.md`](docs/v0.md) — current product decisions and deferred work;
 - [`examples/cordis.patch.yml`](examples/cordis.patch.yml) — minimal Web-profile
   composition patch.
 
 ## Scope
 
-v0 intentionally leaves these for later slices:
+v0 intentionally leaves these for later slices or upstream ownership:
 
 - a true 0px sidebar / new AppFrame posture;
 - richer Overview/Activity cards;
 - Review/Results presentation;
 - Compact Trajectory extraction;
-- typography rice;
+- Conversation/Markdown typography and line measure;
+- QuestionComposer presentation;
 - `zh-HK` runtime localisation;
 - permanent platform keybindings.
 

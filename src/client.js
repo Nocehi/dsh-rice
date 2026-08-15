@@ -1,34 +1,52 @@
 import React from 'react'
 import { COMMAND_IDS, attentionCount, deriveSessionGroups, flattenGroups, nextMruId, overviewGroups, updateMru } from './core.js'
+import { FishLogo } from '@deepseek-ai/dsh-client-ui-primitives'
 
 export const inject = ['slots', 'layout', 'sessions', 'workspaces']
 
 const CSS = `
-[data-dsh-rice-rail] { box-sizing:border-box; width:56px; height:100%; display:flex; flex-direction:column; align-items:center; gap:6px; padding:10px 8px; overflow:hidden; color:var(--dsw-alias-label-primary,#e8e8e8); background:var(--dsw-specific-sidebar-fill,var(--dsw-alias-bg-base,#171717)); border-right:1px solid var(--dsw-alias-border-l2-darkmode-thin,rgba(127,127,127,.18)); font-family:var(--dsw-font-family,sans-serif); }
+[data-dsh-rice-rail] { box-sizing:border-box; width:56px; height:100%; display:flex; flex-direction:column; align-items:center; gap:6px; padding:18px 10px 6px; overflow:hidden; color:var(--dsw-alias-label-primary); background:var(--dsw-specific-sidebar-fill); font-family:var(--dsw-font-family,sans-serif); }
 [data-dsh-rice-rail] button,[data-dsh-rice-switcher] button,[data-dsh-rice-switcher] input { font:inherit; }
+[data-dsh-rice-rail] .dsh-rice-brand { flex:none; width:36px; height:36px; display:grid; place-items:center; margin-bottom:6px; color:var(--dsw-alias-brand-primary); }
+[data-dsh-rice-rail] .dsh-rice-brand svg { display:block; }
 [data-dsh-rice-rail] .dsh-rice-rail-button { position:relative; width:36px; height:36px; display:grid; place-items:center; border:0; border-radius:12px; background:transparent; color:inherit; cursor:pointer; }
-[data-dsh-rice-rail] .dsh-rice-rail-button:hover,[data-dsh-rice-rail] .dsh-rice-rail-button:focus-visible { outline:none; background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.14)); }
+[data-dsh-rice-rail] .dsh-rice-rail-button:hover { background:var(--dsw-alias-interactive-bg-hover); }
+[data-dsh-rice-rail] .dsh-rice-rail-button:active { background:var(--dsw-alias-interactive-bg-active); }
+[data-dsh-rice-rail] .dsh-rice-rail-button:focus-visible { outline:2px solid var(--dsw-alias-brand-primary); outline-offset:2px; }
 [data-dsh-rice-rail] .dsh-rice-rail-icon { display:block; fill:currentColor; }
-[data-dsh-rice-rail] .dsh-rice-badge { position:absolute; right:1px; top:1px; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; display:grid; place-items:center; border-radius:999px; background:var(--dsw-alias-label-primary,#e8e8e8); color:var(--dsw-alias-bg-base,#171717); font-size:10px; font-weight:700; }
+[data-dsh-rice-rail] .dsh-rice-badge { position:absolute; right:1px; top:1px; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; display:grid; place-items:center; border-radius:999px; background:var(--dsw-alias-brand-primary); color:var(--dsw-alias-label-primary-foreground); font-size:10px; line-height:16px; font-weight:700; }
 [data-dsh-rice-rail] .dsh-rice-rail-spacer { flex:1; }
 [data-dsh-rice-rail] .dsh-rice-slot { width:36px; display:grid; place-items:center; }
-[data-dsh-rice-switcher] { position:absolute; inset:0; z-index:100; display:grid; place-items:start center; padding:min(12vh,104px) 16px 16px; box-sizing:border-box; pointer-events:auto; font-family:var(--dsw-font-family,sans-serif); color:var(--dsw-alias-label-primary,#e8e8e8); }
-[data-dsh-rice-switcher] .dsh-rice-backdrop { position:absolute; inset:0; border:0; border-radius:0; background:rgba(0,0,0,.34); backdrop-filter:blur(2px); cursor:default; }
-[data-dsh-rice-switcher] .dsh-rice-panel { position:relative; width:min(720px,calc(100vw - 32px)); max-height:min(72vh,760px); display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--dsw-alias-border-l2-darkmode-thin,rgba(127,127,127,.24)); border-radius:18px; background:var(--dsw-alias-bg-base,#181818); box-shadow:var(--dsw-shadow-lv2,0 18px 60px rgba(0,0,0,.34)); }
-[data-dsh-rice-switcher] .dsh-rice-topline { display:flex; align-items:center; gap:10px; padding:12px; border-bottom:1px solid var(--dsw-alias-border-l2-darkmode-thin,rgba(127,127,127,.18)); }
-[data-dsh-rice-switcher] .dsh-rice-mode-title { flex:0 0 auto; color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); font-size:12px; line-height:24px; font-weight:700; }
-[data-dsh-rice-switcher] .dsh-rice-search { min-width:0; flex:1; border:0; outline:0; background:transparent; color:inherit; font-size:16px; line-height:24px; }
-[data-dsh-rice-switcher] .dsh-rice-new { border:0; border-radius:10px; padding:7px 10px; background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.14)); color:inherit; cursor:pointer; white-space:nowrap; }
-[data-dsh-rice-switcher] .dsh-rice-list { overflow:auto; padding:8px; scrollbar-gutter:stable; }
-[data-dsh-rice-switcher] .dsh-rice-group-label { padding:9px 10px 5px; color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); font-size:11px; line-height:16px; }
-[data-dsh-rice-switcher] .dsh-rice-group-name { font-weight:650; letter-spacing:.03em; }
-[data-dsh-rice-switcher] .dsh-rice-group-path { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:400; letter-spacing:0; opacity:.82; }
-[data-dsh-rice-switcher] .dsh-rice-row { width:100%; min-height:48px; box-sizing:border-box; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:8px 10px; border:0; border-radius:12px; background:transparent; color:inherit; text-align:left; cursor:pointer; }
-[data-dsh-rice-switcher] .dsh-rice-row:hover,[data-dsh-rice-switcher] .dsh-rice-row[data-active="true"] { background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.14)); }
-[data-dsh-rice-switcher] .dsh-rice-row-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; line-height:20px; }
-[data-dsh-rice-switcher] .dsh-rice-row-meta { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); font-size:11px; line-height:16px; }
-[data-dsh-rice-switcher] .dsh-rice-status { color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); font-size:11px; line-height:16px; white-space:nowrap; }
-[data-dsh-rice-switcher] .dsh-rice-empty { padding:28px 18px; color:var(--dsw-alias-label-secondary,rgba(232,232,232,.62)); text-align:center; font-size:13px; }
+[data-dsh-rice-switcher] { position:absolute; inset:0; z-index:100; display:grid; place-items:start center; padding:min(12vh,104px) 16px 16px; box-sizing:border-box; pointer-events:auto; font-family:var(--dsw-font-family,sans-serif); color:var(--dsw-alias-label-primary); }
+[data-dsh-rice-switcher] .dsh-rice-backdrop { position:absolute; inset:0; border:0; border-radius:0; background:var(--dsw-alias-bg-mask-1); backdrop-filter:blur(2px); cursor:default; }
+[data-dsh-rice-switcher] .dsh-rice-panel { position:relative; width:min(720px,calc(100vw - 32px)); max-height:min(72vh,760px); display:flex; flex-direction:column; overflow:hidden; border:0; border-radius:20px; background:var(--dsw-specific-menu); box-shadow:var(--dsw-shadow-lv2); }
+[data-dsh-rice-switcher] .dsh-rice-topline { display:flex; align-items:center; gap:10px; margin:12px 12px 4px; padding:10px 12px; border:0; border-radius:14px; background:var(--dsw-specific-selector); }
+[data-dsh-rice-switcher] .dsh-rice-mode-title { flex:0 0 auto; color:var(--dsw-alias-label-secondary); font-size:12px; line-height:18px; font-weight:700; letter-spacing:.02em; }
+[data-dsh-rice-switcher] .dsh-rice-search { min-width:0; flex:1; border:0; outline:0; background:transparent; color:inherit; font-size:15px; line-height:22px; }
+[data-dsh-rice-switcher] .dsh-rice-search::placeholder { color:var(--dsw-alias-label-tertiary); }
+[data-dsh-rice-switcher] .dsh-rice-search:focus-visible { outline:2px solid var(--dsw-alias-brand-primary); outline-offset:4px; border-radius:6px; }
+[data-dsh-rice-switcher] .dsh-rice-new { min-height:34px; border:0; border-radius:10px; padding:7px 10px; background:var(--dsw-alias-button-elevated-fill); color:inherit; line-height:20px; cursor:pointer; white-space:nowrap; }
+[data-dsh-rice-switcher] .dsh-rice-new:hover { background:var(--dsw-alias-button-floating-hover); }
+[data-dsh-rice-switcher] .dsh-rice-new:active { background:var(--dsw-alias-interactive-bg-active); }
+[data-dsh-rice-switcher] .dsh-rice-new:focus-visible { outline:2px solid var(--dsw-alias-brand-primary); outline-offset:2px; }
+[data-dsh-rice-switcher] .dsh-rice-list { overflow:auto; padding:6px 12px 12px; scrollbar-gutter:stable; }
+[data-dsh-rice-switcher] .dsh-rice-group-label { padding:14px 12px 6px; color:var(--dsw-alias-label-secondary); }
+[data-dsh-rice-switcher] .dsh-rice-group-name { font-size:12px; line-height:18px; font-weight:650; letter-spacing:.02em; }
+[data-dsh-rice-switcher] .dsh-rice-group-path { max-width:60ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-tertiary); font-size:11px; line-height:16px; font-weight:400; letter-spacing:0; }
+[data-dsh-rice-switcher] .dsh-rice-row { width:100%; min-height:52px; box-sizing:border-box; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:8px 12px; border:0; border-radius:14px; background:transparent; color:inherit; text-align:left; cursor:pointer; }
+[data-dsh-rice-switcher] .dsh-rice-row:hover { background:var(--dsw-specific-sidebar-nav-item-hover); }
+[data-dsh-rice-switcher] .dsh-rice-row[data-active="true"] { background:var(--dsw-specific-sidebar-nav-item-active); }
+[data-dsh-rice-switcher] .dsh-rice-row[data-current="true"] { background:var(--dsw-specific-sidebar-nav-item-active-accent); box-shadow:inset 3px 0 0 var(--dsw-alias-brand-primary); }
+[data-dsh-rice-switcher] .dsh-rice-row[data-current="true"][data-active="true"] { background:var(--dsw-specific-sidebar-nav-item-active-accent); }
+[data-dsh-rice-switcher] .dsh-rice-row:active { background:var(--dsw-alias-interactive-bg-active); }
+[data-dsh-rice-switcher] .dsh-rice-row:focus-visible { outline:2px solid var(--dsw-alias-brand-primary); outline-offset:-2px; }
+[data-dsh-rice-switcher] .dsh-rice-row-copy { min-width:0; max-width:58ch; }
+[data-dsh-rice-switcher] .dsh-rice-row-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; line-height:20px; font-weight:500; }
+[data-dsh-rice-switcher] .dsh-rice-row-meta { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dsw-alias-label-secondary); font-size:12px; line-height:18px; }
+[data-dsh-rice-switcher] .dsh-rice-status { color:var(--dsw-alias-label-secondary); font-size:12px; line-height:18px; white-space:nowrap; }
+[data-dsh-rice-switcher] .dsh-rice-row[data-current="true"] .dsh-rice-status { color:var(--dsw-alias-brand-primary); font-weight:650; }
+[data-dsh-rice-switcher] .dsh-rice-empty { padding:32px 20px; color:var(--dsw-alias-label-secondary); text-align:center; font-size:13px; line-height:20px; }
+[data-dsh-rice-switcher] .dsh-rice-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 `
 
 const h = React.createElement
@@ -120,6 +138,7 @@ function ApplicationRail({ collapsed, renderSlot, sessionSource, workspaceSource
   return h(React.Fragment, null, [
     h('style', { key:'style' }, CSS),
     h('nav', { key:'rail', 'data-dsh-rice-rail':'', 'aria-label':'Application rail' }, [
+      h('div', { key:'brand', className:'dsh-rice-brand', role:'img', 'aria-label':'DeepSeek' }, h(FishLogo, { size:24 })),
       h(RailButton, { key:'switcher', label:'Switch sessions', iconPath:MATERIAL_SYMBOL_PATHS.search, iconSize:22, badge:0, onClick:() => { commands.execute(COMMAND_IDS.quickSwitcher) } }),
       h(RailButton, { key:'new', label:'New session', iconPath:MATERIAL_SYMBOL_PATHS.add, iconSize:24, badge:0, onClick:() => { startSession() } }),
       h('div', { key:'spacer', className:'dsh-rice-rail-spacer' }),
@@ -142,6 +161,12 @@ function rowMeta(row, group) {
   if (row.agentPreset) return row.agentPreset
   if (group.path !== '' && row.cwd === group.path) return ''
   return row.cwd || row.workspace
+}
+
+function activeAnnouncement(row) {
+  if (row === undefined) return ''
+  const status = statusLabel(row)
+  return status === '' ? row.title : `${row.title}, ${status}`
 }
 
 function QuickSwitcherOverlay({ uiState, sessionSource, workspaceSource, openSession, startSession }) {
@@ -172,30 +197,42 @@ function QuickSwitcherOverlay({ uiState, sessionSource, workspaceSource, openSes
   let rowCursor = 0
   const panelLabel = attentionMode ? 'Session activity' : 'Session switcher'
   const placeholder = attentionMode ? 'Search activity' : 'Search visible sessions'
+  const resultLabel = attentionMode ? 'Session activity results' : 'Visible sessions'
   return h('div', { 'data-dsh-rice-switcher':'', role:'presentation' }, [
     h('style', { key:'style' }, CSS),
-    h('button', { key:'backdrop', type:'button', className:'dsh-rice-backdrop', 'aria-label':`Close ${panelLabel.toLowerCase()}`, onClick:() => { uiState.close() } }),
-    h('section', { key:'panel', className:'dsh-rice-panel', role:'dialog', 'aria-modal':true, 'aria-label':panelLabel }, [
+    h('button', { key:'backdrop', type:'button', tabIndex:-1, className:'dsh-rice-backdrop', 'aria-label':`Close ${panelLabel.toLowerCase()}`, onClick:() => { uiState.close() } }),
+    h('section', { key:'panel', className:'dsh-rice-panel', role:'dialog', 'aria-modal':true, 'aria-labelledby':'dsh-rice-switcher-title' }, [
       h('div', { key:'top', className:'dsh-rice-topline' }, [
-        h('div', { key:'mode', className:'dsh-rice-mode-title' }, attentionMode ? 'Activity' : 'Sessions'),
-        h('input', { key:'input', ref:inputRef, className:'dsh-rice-search', type:'search', value:ui.query, placeholder, 'aria-label':placeholder, onChange:event => { uiState.setQuery(event.currentTarget.value); setActiveIndex(0) }, onKeyDown }),
+        h('div', { key:'mode', id:'dsh-rice-switcher-title', className:'dsh-rice-mode-title' }, attentionMode ? 'Activity' : 'Sessions'),
+        h('input', { key:'input', ref:inputRef, className:'dsh-rice-search', type:'search', value:ui.query, placeholder, 'aria-label':placeholder, 'aria-controls':'dsh-rice-session-results', onChange:event => { uiState.setQuery(event.currentTarget.value); setActiveIndex(0) }, onKeyDown }),
         attentionMode ? null : h('button', { key:'new', type:'button', className:'dsh-rice-new', onClick:() => { uiState.close(); startSession() } }, '+ New session'),
       ]),
-      h('div', { key:'list', className:'dsh-rice-list' }, groups.length === 0
-        ? h('div', { className:'dsh-rice-empty' }, attentionMode ? 'No active or attention-needed sessions.' : 'No matching sessions.')
+      h('div', { key:'announce', className:'dsh-rice-sr-only', 'aria-live':'polite', 'aria-atomic':true }, activeAnnouncement(rows[activeIndex])),
+      h('div', { key:'list', id:'dsh-rice-session-results', className:'dsh-rice-list', role:'region', 'aria-label':resultLabel }, groups.length === 0
+        ? h('div', { className:'dsh-rice-empty', role:'status' }, attentionMode ? 'No active or attention-needed sessions.' : 'No matching sessions.')
         : groups.flatMap(group => {
           const label = h('div', { key:`g:${group.key}`, className:'dsh-rice-group-label' }, [
             h('div', { key:'name', className:'dsh-rice-group-name' }, group.label),
-            group.path ? h('div', { key:'path', className:'dsh-rice-group-path' }, group.path) : null,
+            group.path ? h('div', { key:'path', className:'dsh-rice-group-path', title:group.path }, group.path) : null,
           ])
           const items = group.sessions.map(row => {
             const index = rowCursor++
             const status = statusLabel(row)
             const meta = rowMeta(row, group)
-            return h('button', { key:`s:${row.id}`, type:'button', className:'dsh-rice-row', 'data-active':index === activeIndex ? 'true' : undefined, onMouseEnter:() => { setActiveIndex(index) }, onClick:() => { activate(row) } }, [
-              h('span', { key:'copy', style:{ minWidth:0 } }, [
+            return h('button', {
+              key:`s:${row.id}`,
+              type:'button',
+              className:'dsh-rice-row',
+              'data-active':index === activeIndex ? 'true' : undefined,
+              'data-current':row.current ? 'true' : undefined,
+              'aria-current':row.current ? 'page' : undefined,
+              onMouseEnter:() => { setActiveIndex(index) },
+              onFocus:() => { setActiveIndex(index) },
+              onClick:() => { activate(row) },
+            }, [
+              h('span', { key:'copy', className:'dsh-rice-row-copy' }, [
                 h('div', { key:'title', className:'dsh-rice-row-title' }, row.title),
-                meta ? h('div', { key:'meta', className:'dsh-rice-row-meta' }, meta) : null,
+                meta ? h('div', { key:'meta', className:'dsh-rice-row-meta', title:meta }, meta) : null,
               ]),
               h('span', { key:'status', className:'dsh-rice-status' }, status),
             ])
