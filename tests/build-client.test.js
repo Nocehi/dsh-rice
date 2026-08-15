@@ -36,3 +36,13 @@ test('browser artifact embeds 20px Material Symbols Rounded rail SVGs instead of
   assert.match(artifact, new RegExp(BROWSE_ACTIVITY_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'))
   assert.doesNotMatch(artifact, /mark:'⌕'|mark:'•'/u)
 })
+
+test('browser artifact keeps Activity distinct from the full session switcher', async () => {
+  await execFileAsync(process.execPath, ['scripts/build-client.mjs'], { cwd:process.cwd() })
+  const artifact = await readFile('lib/client.js', 'utf8')
+  assert.match(artifact, /attentionMode \? 'Activity' : 'Sessions'/u)
+  assert.match(artifact, /attentionMode \? 'Search activity' : 'Search visible sessions'/u)
+  assert.match(artifact, /attentionMode \? overviewGroups\(allGroups\) : allGroups/u)
+  assert.doesNotMatch(artifact, /ui\.query\.trim\(\) === '' \? overviewGroups/u)
+  assert.doesNotMatch(artifact, /row\.current \? '● '/u)
+})
