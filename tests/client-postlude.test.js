@@ -26,6 +26,24 @@ test('client postlude themes the vanilla hero glow and Preview through semantic 
   assert.doesNotMatch(source, /#6187D8/u)
 })
 
+test('adaptive interaction uses coarse-pointer capability while preserving the 36px optical rail seat', async () => {
+  const source = await artifact()
+  assert.match(source, /@media \(any-pointer: coarse\)/u)
+  assert.match(source, /dsh-rice-rail-button \{ width:44px; height:44px; background:transparent; \}/u)
+  assert.match(source, /dsh-rice-rail-button::before \{[^}]*inset:4px;[^}]*border-radius:12px;/u)
+  assert.match(source, /dsh-rice-search,\s*\n\s*\[data-dsh-rice-switcher\] \.dsh-rice-new \{ min-height:44px; \}/u)
+  assert.doesNotMatch(source, /navigator\.userAgent|device-width|\biPad\b|\biPhone\b|\bAndroid\b/u)
+})
+
+test('switcher adapts from its own container before changing navigation topology', async () => {
+  const source = await artifact()
+  assert.match(source, /dsh-rice-panel \{ container-type:inline-size; \}/u)
+  assert.match(source, /@container \(max-width:520px\)/u)
+  assert.match(source, /dsh-rice-new \{ inline-size:44px; min-width:44px; padding-inline:0; font-size:0; \}/u)
+  assert.match(source, /dsh-rice-new::before \{ content:'\+'; font-size:18px; line-height:1; \}/u)
+  assert.doesNotMatch(source, /@media \([^)]*(?:min|max)-width/u)
+})
+
 test('client postlude closes the switcher from any focused descendant', async () => {
   const source = await artifact()
   assert.match(source, /QuickSwitcherOverlay = function RiceQuickSwitcherOverlay/u)
