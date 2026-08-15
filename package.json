@@ -17,7 +17,8 @@
     "examples",
     "docs",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
     "build": "node scripts/build-client.mjs",
