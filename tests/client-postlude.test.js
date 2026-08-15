@@ -26,6 +26,17 @@ test('client postlude themes the vanilla hero glow and Preview through semantic 
   assert.doesNotMatch(source, /#6187D8/u)
 })
 
+test('client postlude themes the active Chat turn-status shimmer without owning its copy or timing', async () => {
+  const source = await artifact()
+  assert.match(source, /\[data-conversation-scroll\] div\[role="status"\]\[aria-live="polite"\] \{/u)
+  assert.match(source, /background-image:linear-gradient\(/u)
+  assert.match(source, /var\(--dsw-alias-state-business-primary\) 40%/u)
+  assert.match(source, /color-mix\(in srgb, var\(--dsw-alias-state-business-primary\) 58%, var\(--dsw-alias-label-primary-foreground\)\) 50%/u)
+  assert.doesNotMatch(source, /--dsw-static-deepseek-/u)
+  assert.doesNotMatch(source, /Deep diving|深度求索中|正在深潛/u)
+  assert.doesNotMatch(source, /dsh-turn-status-shimmer|animation:/u)
+})
+
 test('adaptive interaction uses coarse-pointer capability while preserving the 36px optical rail seat', async () => {
   const source = await artifact()
   assert.match(source, /@media \(any-pointer: coarse\)/u)
