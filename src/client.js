@@ -6,12 +6,12 @@ export const inject = ['slots', 'layout', 'sessions', 'workspaces']
 const CSS = `
 [data-dsh-rice-rail] { box-sizing:border-box; width:56px; height:100%; display:flex; flex-direction:column; align-items:center; gap:6px; padding:10px 8px; overflow:hidden; color:var(--dsw-alias-label-primary,#e8e8e8); background:var(--dsw-specific-sidebar-fill,var(--dsw-alias-bg-base,#171717)); border-right:1px solid var(--dsw-alias-border-l2-darkmode-thin,rgba(127,127,127,.18)); font-family:var(--dsw-font-family,sans-serif); }
 [data-dsh-rice-rail] button,[data-dsh-rice-switcher] button,[data-dsh-rice-switcher] input { font:inherit; }
-[data-dsh-rice-rail] .dsh-rice-rail-button { position:relative; width:40px; height:40px; display:grid; place-items:center; border:0; border-radius:12px; background:transparent; color:inherit; cursor:pointer; }
+[data-dsh-rice-rail] .dsh-rice-rail-button { position:relative; width:36px; height:36px; display:grid; place-items:center; border:0; border-radius:12px; background:transparent; color:inherit; cursor:pointer; }
 [data-dsh-rice-rail] .dsh-rice-rail-button:hover,[data-dsh-rice-rail] .dsh-rice-rail-button:focus-visible { outline:none; background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.14)); }
-[data-dsh-rice-rail] .dsh-rice-rail-icon { width:20px; height:20px; display:block; fill:currentColor; }
+[data-dsh-rice-rail] .dsh-rice-rail-icon { display:block; fill:currentColor; }
 [data-dsh-rice-rail] .dsh-rice-badge { position:absolute; right:1px; top:1px; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; display:grid; place-items:center; border-radius:999px; background:var(--dsw-alias-label-primary,#e8e8e8); color:var(--dsw-alias-bg-base,#171717); font-size:10px; font-weight:700; }
 [data-dsh-rice-rail] .dsh-rice-rail-spacer { flex:1; }
-[data-dsh-rice-rail] .dsh-rice-slot { width:40px; display:grid; place-items:center; }
+[data-dsh-rice-rail] .dsh-rice-slot { width:36px; display:grid; place-items:center; }
 [data-dsh-rice-switcher] { position:absolute; inset:0; z-index:100; display:grid; place-items:start center; padding:min(12vh,104px) 16px 16px; box-sizing:border-box; pointer-events:auto; font-family:var(--dsw-font-family,sans-serif); color:var(--dsw-alias-label-primary,#e8e8e8); }
 [data-dsh-rice-switcher] .dsh-rice-backdrop { position:absolute; inset:0; border:0; border-radius:0; background:rgba(0,0,0,.34); backdrop-filter:blur(2px); cursor:default; }
 [data-dsh-rice-switcher] .dsh-rice-panel { position:relative; width:min(720px,calc(100vw - 32px)); max-height:min(72vh,760px); display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--dsw-alias-border-l2-darkmode-thin,rgba(127,127,127,.24)); border-radius:18px; background:var(--dsw-alias-bg-base,#181818); box-shadow:var(--dsw-shadow-lv2,0 18px 60px rgba(0,0,0,.34)); }
@@ -41,9 +41,9 @@ const MATERIAL_SYMBOL_PATHS = Object.freeze({
   browseActivity: 'M96-588v-155.85Q96-776 118.56-796q22.57-20 54.25-20h614.5q31.69 0 54.19 20 22.5 20 22.5 52.15V-588h-72v-156H168v156H96Zm76.69 324q-31.69 0-54.19-20Q96-304 96-336v-180h72v180h624v-180h72v180q0 32-22.56 52-22.57 20-54.25 20h-614.5ZM84-144q-15.3 0-25.65-10.29Q48-164.58 48-179.79t10.35-25.71Q68.7-216 84-216h792q15.3 0 25.65 10.29Q912-195.42 912-180.21t-10.35 25.71Q891.3-144 876-144H84Zm396-396ZM96-516v-72h233q14 0 25 7t17 18l39 72 112-176q5-8 12.42-12.5 7.43-4.5 16.5-4.5 9.08 0 17.08 3.5 8 3.5 13 10.5l61 82h222v72H629q-11 0-21-5t-17-14l-37-50-116 184q-5 8-13.06 12.5-8.07 4.5-16.94 4.5-9.9 0-18.45-5.5Q381-395 376-403l-62-113H96Z',
 })
 
-function MaterialSymbol({ path }) {
+function MaterialSymbol({ path, size = 20 }) {
   return h('svg', {
-    className:'dsh-rice-rail-icon', width:20, height:20, viewBox:'0 -960 960 960',
+    className:'dsh-rice-rail-icon', width:size, height:size, viewBox:'0 -960 960 960',
     fill:'currentColor', focusable:'false', 'aria-hidden':true,
   }, h('path', { d:path }))
 }
@@ -104,9 +104,9 @@ function createCommands(ctx, uiState, mru) {
   } })
 }
 
-function RailButton({ label, iconPath, badge, onClick }) {
+function RailButton({ label, iconPath, iconSize = 20, badge, onClick }) {
   return h('button', { type:'button', className:'dsh-rice-rail-button', 'aria-label':label, title:label, onClick }, [
-    h(MaterialSymbol, { key:'icon', path:iconPath }),
+    h(MaterialSymbol, { key:'icon', path:iconPath, size:iconSize }),
     badge > 0 ? h('span', { key:'badge', className:'dsh-rice-badge' }, badge > 99 ? '99+' : String(badge)) : null,
   ])
 }
@@ -120,10 +120,10 @@ function ApplicationRail({ collapsed, renderSlot, sessionSource, workspaceSource
   return h(React.Fragment, null, [
     h('style', { key:'style' }, CSS),
     h('nav', { key:'rail', 'data-dsh-rice-rail':'', 'aria-label':'Application rail' }, [
-      h(RailButton, { key:'switcher', label:'Switch sessions', iconPath:MATERIAL_SYMBOL_PATHS.search, badge:0, onClick:() => { commands.execute(COMMAND_IDS.quickSwitcher) } }),
-      h(RailButton, { key:'new', label:'New session', iconPath:MATERIAL_SYMBOL_PATHS.add, badge:0, onClick:() => { startSession() } }),
+      h(RailButton, { key:'switcher', label:'Switch sessions', iconPath:MATERIAL_SYMBOL_PATHS.search, iconSize:22, badge:0, onClick:() => { commands.execute(COMMAND_IDS.quickSwitcher) } }),
+      h(RailButton, { key:'new', label:'New session', iconPath:MATERIAL_SYMBOL_PATHS.add, iconSize:24, badge:0, onClick:() => { startSession() } }),
       h('div', { key:'spacer', className:'dsh-rice-rail-spacer' }),
-      h(RailButton, { key:'attention', label:'Session activity', iconPath:MATERIAL_SYMBOL_PATHS.browseActivity, badge:attention, onClick:() => { commands.execute(COMMAND_IDS.sessionOverview) } }),
+      h(RailButton, { key:'attention', label:'Session activity', iconPath:MATERIAL_SYMBOL_PATHS.browseActivity, iconSize:20, badge:attention, onClick:() => { commands.execute(COMMAND_IDS.sessionOverview) } }),
       h('div', { key:'footer-actions', className:'dsh-rice-slot' }, renderSlot('sidebar.footer.action', { wide:false })),
       h('div', { key:'settings', className:'dsh-rice-slot' }, renderSlot('sidebar.settings', { wide:false })),
     ]),
