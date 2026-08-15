@@ -4,12 +4,14 @@ import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const corePath = resolve(root, 'src/core.js')
+const pulsePath = resolve(root, 'src/pulse.js')
 const clientPath = resolve(root, 'src/client.js')
 const outputPath = resolve(root, 'lib/client.js')
 const REACT_IMPORT = "import React from 'react'\n"
 const CORE_IMPORT = "import { COMMAND_IDS, attentionCount, deriveSessionGroups, flattenGroups, nextMruId, overviewGroups, updateMru } from './core.js'\n"
+const PULSE_IMPORT = "import { PULSE_DEFAULTS, PulseTimeline, advancePulseBpm, derivePulseActivity, derivePulseSignal, ecgValue, updatePulseSamples } from './pulse.js'\n"
 const UI_PRIMITIVES_IMPORT = "import { FishLogo } from '@deepseek-ai/dsh-client-ui-primitives'\n"
-const CLIENT_IMPORTS = REACT_IMPORT + CORE_IMPORT + UI_PRIMITIVES_IMPORT
+const CLIENT_IMPORTS = REACT_IMPORT + CORE_IMPORT + PULSE_IMPORT + UI_PRIMITIVES_IMPORT
 const DECLARATION_EXPORT = /^export (?:const|class|function|async function) [A-Za-z_$][A-Za-z0-9_$]*/u
 const DYNAMIC_IMPORT = /\bimport(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\r\n]*(?:\r\n?|\n|$))*\(/u
 const EXPECTED_REQUIRES = Object.freeze(['react', '@deepseek-ai/dsh-client-ui-primitives'])
@@ -31,15 +33,21 @@ function stripModuleSyntax(source, label) {
   return transformed.trimEnd()
 }
 
-const [coreSource, clientSource] = await Promise.all([readFile(corePath, 'utf8'), readFile(clientPath, 'utf8')])
+const [coreSource, pulseSource, clientSource] = await Promise.all([
+  readFile(corePath, 'utf8'),
+  readFile(pulsePath, 'utf8'),
+  readFile(clientPath, 'utf8'),
+])
 if (/^\s*import\s/mu.test(coreSource)) throw new Error('dsh-rice build: src/core.js must remain dependency-free')
+if (/^\s*import\s/mu.test(pulseSource)) throw new Error('dsh-rice build: src/pulse.js must remain dependency-free')
 if (!clientSource.startsWith(CLIENT_IMPORTS)) {
-  throw new Error('dsh-rice build: src/client.js imports must remain React, ./core.js, then DSH UI primitives, exactly')
+  throw new Error('dsh-rice build: src/client.js imports must remain React, ./core.js, ./pulse.js, then DSH UI primitives, exactly')
 }
 const clientBody = clientSource.slice(CLIENT_IMPORTS.length)
 if (/^\s*import\s/mu.test(clientBody)) throw new Error('dsh-rice build: browser client contains an additional static import')
 
 const core = stripModuleSyntax(coreSource, 'src/core.js')
+const pulse = stripModuleSyntax(pulseSource, 'src/pulse.js')
 const client = stripModuleSyntax(clientBody, 'src/client.js')
 const artifact = [
   'window.__ModuleLoader__.load({ id: "dsh-rice", factory: (require) => {',
@@ -47,7 +55,7 @@ const artifact = [
   'var module = { exports: {} }; var exports = module.exports;',
   "const React = require('react');",
   "const { FishLogo } = require('@deepseek-ai/dsh-client-ui-primitives');",
-  '', core, '', client, '',
+  '', core, '', pulse, '', client, '',
   'module.exports = { inject, COMMAND_IDS, apply };',
   'return module.exports;',
   '} });',

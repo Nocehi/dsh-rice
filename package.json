@@ -23,8 +23,8 @@
   "scripts": {
     "build": "node scripts/build-client.mjs",
     "prepare": "npm run build",
-    "test": "npm run build && node --test tests/core.test.js tests/build-client.test.js tests/apply.test.js",
-    "check": "node --check src/index.js && node --check src/core.js && node --check src/client.js && node --check scripts/build-client.mjs && npm test"
+    "test": "npm run build && node --test tests/core.test.js tests/pulse.test.js tests/build-client.test.js tests/apply.test.js",
+    "check": "node --check src/index.js && node --check src/core.js && node --check src/pulse.js && node --check src/client.js && node --check scripts/build-client.mjs && npm test"
   },
   "engines": {
     "node": ">=22"
@@ -42,7 +42,8 @@
     "client": {
       "inject": [
         "@deepseek-ai/dsh-client-runtime",
-        "@deepseek-ai/dsh-client-ui-layout"
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-conversation"
       ],
       "platform": "web",
       "immediately": true
