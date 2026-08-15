@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const corePath = resolve(root, 'src/core.js')
 const clientPath = resolve(root, 'src/client.js')
+const postludePath = resolve(root, 'src/client-postlude.js')
 const outputPath = resolve(root, 'lib/client.js')
 const REACT_IMPORT = "import React from 'react'\n"
 const CORE_IMPORT = "import { COMMAND_IDS, attentionCount, deriveSessionGroups, flattenGroups, nextMruId, overviewGroups, updateMru } from './core.js'\n"
@@ -31,8 +32,13 @@ function stripModuleSyntax(source, label) {
   return transformed.trimEnd()
 }
 
-const [coreSource, clientSource] = await Promise.all([readFile(corePath, 'utf8'), readFile(clientPath, 'utf8')])
+const [coreSource, clientSource, postludeSource] = await Promise.all([
+  readFile(corePath, 'utf8'),
+  readFile(clientPath, 'utf8'),
+  readFile(postludePath, 'utf8'),
+])
 if (/^\s*import\s/mu.test(coreSource)) throw new Error('dsh-rice build: src/core.js must remain dependency-free')
+if (/^\s*(?:import|export)\s/mu.test(postludeSource)) throw new Error('dsh-rice build: src/client-postlude.js must remain a dependency-free script')
 if (!clientSource.startsWith(CLIENT_IMPORTS)) {
   throw new Error('dsh-rice build: src/client.js imports must remain React, ./core.js, then DSH UI primitives, exactly')
 }
@@ -41,13 +47,14 @@ if (/^\s*import\s/mu.test(clientBody)) throw new Error('dsh-rice build: browser 
 
 const core = stripModuleSyntax(coreSource, 'src/core.js')
 const client = stripModuleSyntax(clientBody, 'src/client.js')
+const postlude = stripModuleSyntax(postludeSource, 'src/client-postlude.js')
 const artifact = [
   'window.__ModuleLoader__.load({ id: "dsh-rice", factory: (require) => {',
   "'use strict'",
   'var module = { exports: {} }; var exports = module.exports;',
   "const React = require('react');",
   "const { FishLogo } = require('@deepseek-ai/dsh-client-ui-primitives');",
-  '', core, '', client, '',
+  '', core, '', client, '', postlude, '',
   'module.exports = { inject, COMMAND_IDS, apply };',
   'return module.exports;',
   '} });',
