@@ -8,7 +8,7 @@ const CSS = `
 [data-dsh-rice-rail] button,[data-dsh-rice-switcher] button,[data-dsh-rice-switcher] input { font:inherit; }
 [data-dsh-rice-rail] .dsh-rice-rail-button { position:relative; width:40px; height:40px; display:grid; place-items:center; border:0; border-radius:12px; background:transparent; color:inherit; cursor:pointer; }
 [data-dsh-rice-rail] .dsh-rice-rail-button:hover,[data-dsh-rice-rail] .dsh-rice-rail-button:focus-visible { outline:none; background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.14)); }
-[data-dsh-rice-rail] .dsh-rice-rail-mark { font-size:15px; font-weight:650; line-height:1; }
+[data-dsh-rice-rail] .dsh-rice-rail-icon { width:20px; height:20px; display:block; fill:currentColor; }
 [data-dsh-rice-rail] .dsh-rice-badge { position:absolute; right:1px; top:1px; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; display:grid; place-items:center; border-radius:999px; background:var(--dsw-alias-label-primary,#e8e8e8); color:var(--dsw-alias-bg-base,#171717); font-size:10px; font-weight:700; }
 [data-dsh-rice-rail] .dsh-rice-rail-spacer { flex:1; }
 [data-dsh-rice-rail] .dsh-rice-slot { width:40px; display:grid; place-items:center; }
@@ -29,6 +29,21 @@ const CSS = `
 `
 
 const h = React.createElement
+
+// Material Symbols Rounded 20px path data from google/material-design-icons.
+// Licensed under Apache-2.0; see THIRD_PARTY_NOTICES.md.
+const MATERIAL_SYMBOL_PATHS = Object.freeze({
+  search: 'M384.03-336Q284-336 214-406t-70-170q0-100 70-170t170-70q100 0 170 70t70 170.03q0 40.39-12.5 76.18Q599-464 577-434l214 214q11 11 11 25t-11 25q-11 11-25.5 11T740-170L526-383q-30 22-65.79 34.5-35.79 12.5-76.18 12.5Zm-.03-72q70 0 119-49t49-119q0-70-49-119t-119-49q-70 0-119 49t-49 119q0 70 49 119t119 49Z',
+  add: 'M444-444H276q-15.3 0-25.65-10.29Q240-464.58 240-479.79t10.35-25.71Q260.7-516 276-516h168v-168q0-15.3 10.29-25.65Q464.58-720 479.79-720t25.71 10.35Q516-699.3 516-684v168h168q15.3 0 25.65 10.29Q720-495.42 720-480.21t-10.35 25.71Q699.3-444 684-444H516v168q0 15.3-10.29 25.65Q495.42-240 480.21-240t-25.71-10.35Q444-260.7 444-276v-168Z',
+  browseActivity: 'M96-588v-155.85Q96-776 118.56-796q22.57-20 54.25-20h614.5q31.69 0 54.19 20 22.5 20 22.5 52.15V-588h-72v-156H168v156H96Zm76.69 324q-31.69 0-54.19-20Q96-304 96-336v-180h72v180h624v-180h72v180q0 32-22.56 52-22.57 20-54.25 20h-614.5ZM84-144q-15.3 0-25.65-10.29Q48-164.58 48-179.79t10.35-25.71Q68.7-216 84-216h792q15.3 0 25.65 10.29Q912-195.42 912-180.21t-10.35 25.71Q891.3-144 876-144H84Zm396-396ZM96-516v-72h233q14 0 25 7t17 18l39 72 112-176q5-8 12.42-12.5 7.43-4.5 16.5-4.5 9.08 0 17.08 3.5 8 3.5 13 10.5l61 82h222v72H629q-11 0-21-5t-17-14l-37-50-116 184q-5 8-13.06 12.5-8.07 4.5-16.94 4.5-9.9 0-18.45-5.5Q381-395 376-403l-62-113H96Z',
+})
+
+function MaterialSymbol({ path }) {
+  return h('svg', {
+    className:'dsh-rice-rail-icon', width:20, height:20, viewBox:'0 -960 960 960',
+    fill:'currentColor', focusable:'false', 'aria-hidden':true,
+  }, h('path', { d:path }))
+}
 
 function useSource(source) {
   return React.useSyncExternalStore(listener => source.subscribe(listener), () => source.getSnapshot(), () => source.getSnapshot())
@@ -86,9 +101,9 @@ function createCommands(ctx, uiState, mru) {
   } })
 }
 
-function RailButton({ label, mark, badge, onClick }) {
+function RailButton({ label, iconPath, badge, onClick }) {
   return h('button', { type:'button', className:'dsh-rice-rail-button', 'aria-label':label, title:label, onClick }, [
-    h('span', { key:'mark', className:'dsh-rice-rail-mark', 'aria-hidden':true }, mark),
+    h(MaterialSymbol, { key:'icon', path:iconPath }),
     badge > 0 ? h('span', { key:'badge', className:'dsh-rice-badge' }, badge > 99 ? '99+' : String(badge)) : null,
   ])
 }
@@ -102,10 +117,10 @@ function ApplicationRail({ collapsed, renderSlot, sessionSource, workspaceSource
   return h(React.Fragment, null, [
     h('style', { key:'style' }, CSS),
     h('nav', { key:'rail', 'data-dsh-rice-rail':'', 'aria-label':'Application rail' }, [
-      h(RailButton, { key:'switcher', label:'Switch sessions', mark:'⌕', badge:0, onClick:() => { commands.execute(COMMAND_IDS.quickSwitcher) } }),
-      h(RailButton, { key:'new', label:'New session', mark:'+', badge:0, onClick:() => { startSession() } }),
+      h(RailButton, { key:'switcher', label:'Switch sessions', iconPath:MATERIAL_SYMBOL_PATHS.search, badge:0, onClick:() => { commands.execute(COMMAND_IDS.quickSwitcher) } }),
+      h(RailButton, { key:'new', label:'New session', iconPath:MATERIAL_SYMBOL_PATHS.add, badge:0, onClick:() => { startSession() } }),
       h('div', { key:'spacer', className:'dsh-rice-rail-spacer' }),
-      h(RailButton, { key:'attention', label:'Session activity', mark:'•', badge:attention, onClick:() => { commands.execute(COMMAND_IDS.sessionOverview) } }),
+      h(RailButton, { key:'attention', label:'Session activity', iconPath:MATERIAL_SYMBOL_PATHS.browseActivity, badge:attention, onClick:() => { commands.execute(COMMAND_IDS.sessionOverview) } }),
       h('div', { key:'footer-actions', className:'dsh-rice-slot' }, renderSlot('sidebar.footer.action', { wide:false })),
       h('div', { key:'settings', className:'dsh-rice-slot' }, renderSlot('sidebar.settings', { wide:false })),
     ]),
