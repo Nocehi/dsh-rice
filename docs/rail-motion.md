@@ -1,31 +1,43 @@
 # Rail icon micro-motion
 
-The v0 application rail keeps the existing Google Material Symbols Rounded geometry for Sessions, New Session, and Activity. The motion layer does not introduce a replacement icon family or a browser motion dependency.
+The v0 application rail keeps the existing command topology and hit-target geometry, but the three rice-owned command glyphs are now treated as separate choreography problems rather than as one generic transform system.
 
-## Physical dogfood correction
+## Physical dogfood corrections
 
-The first implementation used hover/focus end states built from `scale()`, `scaleX()` and `scaleY()` on clipped copies of the three Material Symbols. Physical DSH Web dogfood rejected that treatment: all three commands read primarily as the icon growing, rather than as an internal semantic motion.
+Two local dogfood passes were rejected before the current treatment:
 
-The current contract therefore forbids scaling the rail glyph silhouette. Motion is transient: entering hover or keyboard focus plays one short internal gesture and returns the icon to its authored resting geometry while the pointer/focus may remain in the seat.
+1. **Scale-based end states** made all three controls read primarily as the icon getting larger.
+2. **140ms one-shot nudges** made Sessions and New Session read as a twitch, while Activity was effectively imperceptible at rail scale.
+
+The current pass changes only Sessions and Activity. **New Session / add is intentionally left on the previous provisional 1px part-nudge treatment while its icon grammar is evaluated separately.**
 
 ## Interaction contract
 
-- **Sessions / search** — the lens remains fixed. The handle is isolated from the same Material Symbol with a bounded clip and nudges one CSS pixel along its own diagonal before returning.
-- **New Session / add** — the horizontal and vertical strokes remain the same size. They are isolated from the same Material Symbol and briefly move one CSS pixel on different axes before returning, changing their relationship without stretching the plus.
-- **Activity / browse_activity** — the existing Google path is decomposed at its authored subpath boundaries into a static shell/baseline and the activity waveform. Only the waveform moves one CSS pixel horizontally before returning.
+- **Sessions** — the rail command is still identified from the existing `MATERIAL_SYMBOL_PATHS.search` command binding, but its rice-owned presentation now renders an adapted Carbon `ScanMotion` glyph. The scanner frame moves horizontally while three scan bars pulse in a staggered sequence. The motion follows the donor's 2s envelope while hover/focus remains active; most visible motion occurs near the start of that envelope. The overall glyph seat does not scale.
+- **New Session / add** — unchanged in this pass. The horizontal and vertical strokes remain clipped from the existing Google Material Symbol and briefly move one CSS pixel on different axes before returning. This remains provisional.
+- **Activity / browse_activity** — the existing Google path is separated at its authored subpath boundaries into upper shell, lower shell, baseline, and waveform. On hover/focus, the baseline, lower shell, then upper shell are directionally wiped from left to right with a 70ms stagger. The waveform never moves. The fully revealed waveform remains the stable hover/focus end state; leaving reverses the sequence so the shell is rebuilt.
 - **Big Fat Whale** remains a passive, stable brand landmark.
 
-The motion is intentionally bounded to the three rice-owned command glyphs. It does not alter the 56px rail, 36px optical control seats, button hit targets, semantic hover/pressed/focus fills, badges, or command behaviour.
-
-The motion duration is 140ms with the existing productive easing shape. There is no scale, rotation, looping animation, weight-axis pulse, or fill-axis transition in this slice.
+The rail stays 56px wide with the same 36px optical seats, button commands, badges, semantic hover/pressed/focus fills, and adaptive coarse-pointer targets.
 
 ## Representation boundary
 
-Google currently ships these Material Symbols as filled, monolithic SVG paths. `search` and `add` therefore continue to reuse the original path through small clipping regions rather than introducing newly redrawn approximations.
+### Sessions / Scan
 
-`browse_activity` already contains useful independent subpaths in the upstream SVG path data. The rail motion component preserves those exact path commands while separating the frame/baseline from the waveform so the outer silhouette can stay still.
+`ScanMotion` is intentionally used as a semantic replacement for the magnifier presentation in the rice-owned rail seat. The underlying Sessions command contract is unchanged; only the icon presentation changes.
 
-This slice does not attempt general SVG path morphing or stroke-dash drawing. Those techniques require a different path representation and are not needed for the current three rail commands.
+The adapted donor geometry consists of one scanner frame and three scan bars. The donor uses internal `scaleY()` on the bars and horizontal translation on the scanner frame. This is permitted here because the deformation belongs to the scanning content itself; the 20/22px glyph box and overall silhouette are not scaled as a unit.
+
+### Activity
+
+`browse_activity` already contains useful independent subpaths. The rail component preserves those Google path commands while exposing four independently presentable pieces:
+
+- upper shell;
+- lower shell;
+- baseline;
+- waveform.
+
+The current "snake" experiment uses staged `clip-path` wipes rather than opacity. Entering hover/focus removes the shell in one direction and holds that state; leaving applies the reverse order. This is a directional reveal prototype, not general SVG path morphing.
 
 ## Capability and accessibility boundary
 
@@ -37,24 +49,26 @@ Pointer hover motion is enabled only when all of these are true:
 (pointer: fine)
 ```
 
-Keyboard `:focus-visible` triggers the same one-shot semantic gesture when reduced motion is not requested. With `prefers-reduced-motion: reduce`, none of the rail keyframe animation declarations apply.
+Keyboard `:focus-visible` reaches the same choreography when reduced motion is not requested. With `prefers-reduced-motion: reduce`, the scanner animations and Activity clip-path transitions are not declared, so both icons remain at their resting geometry.
 
 Coarse-pointer sizing continues to be owned by the existing adaptive-interaction rule; this slice does not add device-name detection or viewport heuristics.
 
 ## Provenance
 
-The glyph authority remains the already vendored Google Material Symbols Rounded paths documented in `THIRD_PARTY_NOTICES.md`:
+Google Material Symbols Rounded remains the source for:
 
-- `search`
-- `add`
-- `browse_activity`
+- the command identity used to recognize the Sessions rail button (`search`);
+- `add`;
+- `browse_activity`.
 
-Those SVG paths remain redistributed under Apache-2.0. The `browse_activity` shell and waveform constants are exact subpaths of the already attributed glyph, with the relative move at the subpath boundary normalized to an equivalent absolute move so each part can render independently.
+The Activity shell/baseline/waveform constants are exact subpaths of the already attributed `browse_activity` glyph, with subpath starts normalized where necessary so each part can render independently.
 
-The clipping, transforms, timing, easing, and React presentation code in this repository are locally authored. Carbon animated icons and Android animated-vector material informed the choreography investigation, but this repository copies no Carbon component, stylesheet, Android XML, or third-party animated-icon geometry.
+The **rendered Sessions scanner geometry and scanner/bar choreography are adapted from Carbon Icon Animations `ScanMotion`**, licensed under Apache-2.0. The adaptation changes the component/runtime integration, color handling, hover/focus trigger model, reduced-motion behavior, and presentation boundary for dsh-rice. Source and copyright attribution are recorded in `THIRD_PARTY_NOTICES.md` and the adapted source carries an explicit modification notice.
+
+No `@carbon/icons-motion` runtime dependency is added.
 
 ## Browser artifact boundary
 
-The implementation stays in `src/client-postlude.js`, which is concatenated into the existing namespace-module factory. It reuses the existing `MaterialSymbol`, `MATERIAL_SYMBOL_PATHS`, React identity, and `RailButton` seam.
+The implementation stays in `src/client-postlude.js`, concatenated into the existing namespace-module factory. It reuses the existing React identity and `RailButton` seam.
 
 No additional browser platform module is required; the artifact contract remains limited to React and `@deepseek-ai/dsh-client-ui-primitives`.
