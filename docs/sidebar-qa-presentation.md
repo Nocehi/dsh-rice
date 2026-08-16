@@ -25,7 +25,8 @@ Within the Ask tab, rice scopes changes to structural chrome:
 - the textarea and send button become one composer seat;
 - the composer seat reuses the audited DSH InputBar card roles: `--dsw-alias-border-l2-darkmode-thin`, 22px shape, `--dsw-specific-input-major`, and level-2 elevation; focus does not replace that hairline with a brand-colored outline;
 - the send action reuses the audited DSH InputBar primary optical contract: 34px circle, `--dsw-alias-button-info-fill` / `--dsw-alias-button-info-hover`, static white, 0.4 disabled opacity, and the exact 16px arrow path shipped by InputBar;
-- coarse-pointer posture enlarges the send hit target to 44px while keeping the 34px optical circle centered inside it;
+- the arrow is absolutely pinned to the optical center (`50% / 50%` with a `-50% / -50%` transform) instead of relying on pseudo-element grid or mask layout;
+- coarse-pointer posture enlarges the send hit target to 44px while keeping the 34px optical circle and the 16px arrow on the same center;
 - assistant Markdown, quoted evidence, transcript streaming, follow-up lineage, and title behavior remain owned by Sidebar QA.
 
 ## Deliberately unchanged
