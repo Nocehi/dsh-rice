@@ -31,3 +31,10 @@ test('sidebar QA skin consumes no CSS-module names and does not alter model poli
   assert.match(source, /:has\(> textarea\)/u)
   assert.match(source, /:has\(> button\):not\(:has\(> textarea\)\)/u)
 })
+
+test('empty sidebar QA composer keeps the send arrow and uses opacity for disabled state', async () => {
+  const source = await postlude()
+  assert.match(source, /button::before \{\s*\n\s*content:'↑';/u)
+  assert.match(source, /button:disabled \{\s*\n\s*opacity:\.45; cursor:default;/u)
+  assert.doesNotMatch(source, /button:disabled::before/u)
+})
