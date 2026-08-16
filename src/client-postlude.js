@@ -120,16 +120,25 @@ const RICE_SIDEBAR_QA_CSS = `
   outline:2px solid var(--dsw-alias-brand-primary); outline-offset:-2px;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button {
-  position:absolute; right:16px; bottom:17px; width:32px; height:32px;
-  display:grid; place-items:center; padding:0; border:0; border-radius:10px;
-  background:var(--dsw-alias-brand-primary); color:var(--dsw-alias-label-primary-foreground);
+  position:absolute; right:14px; bottom:15px; width:36px; height:36px;
+  display:grid; place-items:center; padding:0; border:0; border-radius:50%;
+  background:transparent; color:var(--dsw-alias-label-primary-foreground);
   font-size:0; line-height:1; box-shadow:none; cursor:pointer;
 }
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::after {
+  content:''; position:absolute; inset:0; border-radius:50%;
+  background:var(--dsw-alias-brand-primary); z-index:0;
+}
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::before {
-  content:'↑'; font-size:18px; line-height:1;
+  content:''; position:relative; z-index:1; width:20px; height:20px; background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12%2019V5M6%2011l6-6%206%206' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/20px 20px no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12%2019V5M6%2011l6-6%206%206' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/20px 20px no-repeat;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:hover:not(:disabled) {
-  background:var(--dsw-alias-button-floating-hover); color:var(--dsw-alias-label-primary);
+  color:var(--dsw-alias-label-primary);
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:hover:not(:disabled)::after {
+  background:var(--dsw-alias-button-floating-hover);
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:focus-visible {
   outline:2px solid var(--dsw-alias-brand-primary); outline-offset:2px;
@@ -144,6 +153,7 @@ const RICE_SIDEBAR_QA_CSS = `
   [data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) > button:last-child { inline-size:44px; min-width:44px; }
   [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea { min-height:52px; padding-right:58px; }
   [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button { right:14px; bottom:12px; width:44px; height:44px; }
+  [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::after { inset:4px; }
 }
 `
 
