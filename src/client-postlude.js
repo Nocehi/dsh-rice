@@ -137,7 +137,6 @@ const RICE_SIDEBAR_QA_CSS = `
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:disabled {
   opacity:.45; cursor:default;
 }
-[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:disabled::before { content:'…'; }
 
 @media (any-pointer: coarse) {
   [data-dsh-sidebar-qa] button { min-width:44px; min-height:44px; padding-inline:12px; }
