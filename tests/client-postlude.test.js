@@ -77,7 +77,7 @@ test('rail Material Symbols gain bounded semantic micro-motion without a new ico
   assert.match(source, /iconPath === MATERIAL_SYMBOL_PATHS\.search/u)
   assert.match(source, /iconPath === MATERIAL_SYMBOL_PATHS\.add/u)
   assert.match(source, /iconPath === MATERIAL_SYMBOL_PATHS\.browseActivity/u)
-  assert.match(source, /riceRailMotionPart\([^)]*h\(MaterialSymbol/su)
+  assert.match(source, /function riceRailMotionPart[\s\S]*?h\(MaterialSymbol, \{ path:iconPath, size:iconSize \}\)/u)
   assert.match(source, /dsh-rice-motion-search-lens \{ clip-path:polygon/u)
   assert.match(source, /dsh-rice-motion-search-handle \{ clip-path:polygon/u)
   assert.match(source, /dsh-rice-motion-add-horizontal \{ clip-path:inset/u)
