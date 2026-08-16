@@ -64,6 +64,35 @@ const RICE_ADAPTIVE_CSS = `
 }
 `
 
+const RICE_RAIL_MOTION_CSS = `
+/* Keep Google's Apache-2.0 Material Symbols geometry and animate only locally
+   authored presentation layers. No motion library or replacement icon set is
+   introduced. */
+[data-dsh-rice-rail] .dsh-rice-rail-motion-icon { position:relative; z-index:1; display:block; flex:none; }
+[data-dsh-rice-rail] .dsh-rice-rail-motion-part { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; transform:translate3d(0,0,0); }
+[data-dsh-rice-rail] .dsh-rice-motion-search-lens { clip-path:polygon(7% 7%,69% 7%,69% 70%,7% 70%); transform-origin:40% 40%; }
+[data-dsh-rice-rail] .dsh-rice-motion-search-handle { clip-path:polygon(48% 48%,93% 48%,93% 93%,48% 93%); transform-origin:58% 58%; }
+[data-dsh-rice-rail] .dsh-rice-motion-add-horizontal { clip-path:inset(40% 14% 40% 14%); transform-origin:center; }
+[data-dsh-rice-rail] .dsh-rice-motion-add-vertical { clip-path:inset(14% 40% 14% 40%); transform-origin:center; }
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-dsh-rice-rail] .dsh-rice-rail-motion-part { transition:transform 160ms cubic-bezier(.2,0,0,1); }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-lens { transform:translate(-.25px,-.25px) scale(1.025); }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-handle { transform:translate(1px,1px) rotate(-2deg); }
+  [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-horizontal { transform:scaleX(1.08); }
+  [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-vertical { transform:scaleY(1.08); }
+  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-whole { transform:translateY(-.5px) scaleY(1.035); }
+}
+
+@media (prefers-reduced-motion: no-preference) and (hover:hover) and (pointer:fine) {
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-lens { transform:translate(-.25px,-.25px) scale(1.025); }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-handle { transform:translate(1px,1px) rotate(-2deg); }
+  [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-horizontal { transform:scaleX(1.08); }
+  [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-vertical { transform:scaleY(1.08); }
+  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-whole { transform:translateY(-.5px) scaleY(1.035); }
+}
+`
+
 /* Optional dsh-sidebar-qa integration. The floating selection affordance
    already has a stable plugin-owned data host, so it can be presented without
    knowing any CSS-module class name. The AskPanel gets the second data scope
@@ -219,6 +248,57 @@ function installSidebarQaPresentation(ctx) {
   }
 }
 
+function riceRailMotionKind(iconPath) {
+  if (iconPath === MATERIAL_SYMBOL_PATHS.search) return 'search'
+  if (iconPath === MATERIAL_SYMBOL_PATHS.add) return 'add'
+  if (iconPath === MATERIAL_SYMBOL_PATHS.browseActivity) return 'activity'
+  return undefined
+}
+
+function riceRailMotionPart(key, className, iconPath, iconSize) {
+  return h('span', { key, className:`dsh-rice-rail-motion-part ${className}`, 'aria-hidden':true },
+    h(MaterialSymbol, { path:iconPath, size:iconSize }))
+}
+
+function RiceRailMotionIcon({ iconPath, iconSize, motion }) {
+  let parts
+  if (motion === 'search') {
+    parts = [
+      riceRailMotionPart('lens', 'dsh-rice-motion-search-lens', iconPath, iconSize),
+      riceRailMotionPart('handle', 'dsh-rice-motion-search-handle', iconPath, iconSize),
+    ]
+  } else if (motion === 'add') {
+    parts = [
+      riceRailMotionPart('horizontal', 'dsh-rice-motion-add-horizontal', iconPath, iconSize),
+      riceRailMotionPart('vertical', 'dsh-rice-motion-add-vertical', iconPath, iconSize),
+    ]
+  } else {
+    parts = [riceRailMotionPart('whole', 'dsh-rice-motion-activity-whole', iconPath, iconSize)]
+  }
+  return h('span', {
+    className:`dsh-rice-rail-motion-icon dsh-rice-rail-motion-${motion}`,
+    style:{ width:iconSize, height:iconSize },
+    'aria-hidden':true,
+  }, parts)
+}
+
+RailButton = function RiceAnimatedRailButton({ label, iconPath, iconSize = 20, badge, onClick }) {
+  const motion = riceRailMotionKind(iconPath)
+  return h('button', {
+    type:'button',
+    className:'dsh-rice-rail-button',
+    'data-dsh-rice-motion':motion,
+    'aria-label':label,
+    title:label,
+    onClick,
+  }, [
+    motion === undefined
+      ? h(MaterialSymbol, { key:'icon', path:iconPath, size:iconSize })
+      : h(RiceRailMotionIcon, { key:'icon', iconPath, iconSize, motion }),
+    badge > 0 ? h('span', { key:'badge', className:'dsh-rice-badge' }, badge > 99 ? '99+' : String(badge)) : null,
+  ])
+}
+
 /** Distinguish duplicate visible rows in the polite live-region announcement. */
 activeAnnouncement = function riceActiveAnnouncement(row) {
   if (row === undefined) return ''
@@ -230,7 +310,7 @@ activeAnnouncement = function riceActiveAnnouncement(row) {
 /** Carry bounded compatibility plus adaptive interaction rules with the rail. */
 ApplicationRail = function RiceApplicationRail(props) {
   return h(React.Fragment, null, [
-    h('style', { key:'presentation-compat' }, `${RICE_COMPAT_CSS}\n${RICE_ADAPTIVE_CSS}\n${RICE_SIDEBAR_QA_CSS}`),
+    h('style', { key:'presentation-compat' }, `${RICE_COMPAT_CSS}\n${RICE_ADAPTIVE_CSS}\n${RICE_SIDEBAR_QA_CSS}\n${RICE_RAIL_MOTION_CSS}`),
     h(RiceApplicationRailBase, { ...props, key:'rail' }),
   ])
 }
