@@ -65,46 +65,26 @@ const RICE_ADAPTIVE_CSS = `
 `
 
 const RICE_RAIL_MOTION_CSS = `
-/* Physical dogfood rejected both whole-glyph zoom and short one-shot nudges.
-   Sessions now uses a function-shaped scanner choreography; Activity holds a
-   stable hover state by progressively wiping only its shell. New Session is
-   deliberately left on the prior provisional treatment while its icon grammar
-   is evaluated separately. */
+/* Physical dogfood rejected whole-glyph zoom, one-shot nudges, and an
+   autonomous scanner loop. Sessions and Activity now model hover/focus as a
+   reversible state transition: entering advances the semantic parts, holding
+   keeps the active pose, and release unwinds from the current rendered state.
+   New Session remains on its prior provisional treatment. */
 [data-dsh-rice-rail] .dsh-rice-rail-motion-icon { position:relative; z-index:1; display:block; flex:none; }
 [data-dsh-rice-rail] .dsh-rice-rail-motion-part { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; transform:translate3d(0,0,0); }
 [data-dsh-rice-rail] .dsh-rice-motion-add-horizontal { clip-path:inset(40% 14% 40% 14%); }
 [data-dsh-rice-rail] .dsh-rice-motion-add-vertical { clip-path:inset(14% 40% 14% 40%); }
 [data-dsh-rice-rail] .dsh-rice-motion-search-svg,
 [data-dsh-rice-rail] .dsh-rice-motion-activity-svg { display:block; width:100%; height:100%; fill:currentColor; }
-[data-dsh-rice-rail] .dsh-rice-motion-search-scanner,
-[data-dsh-rice-rail] .dsh-rice-motion-search-line { transform:translate3d(0,0,0); transform-origin:16px 16px; }
+[data-dsh-rice-rail] .dsh-rice-motion-search-scanner { transform:translate3d(0,0,0); transform-origin:16px 16px; }
+[data-dsh-rice-rail] .dsh-rice-motion-search-line { transform:scaleY(1); transform-origin:16px 16px; }
 [data-dsh-rice-rail] .dsh-rice-motion-activity-shell-top,
-[data-dsh-rice-rail] .dsh-rice-motion-activity-shell-bottom,
-[data-dsh-rice-rail] .dsh-rice-motion-activity-baseline { clip-path:inset(0 0 0 0); }
+[data-dsh-rice-rail] .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 0); }
 
 /* Adapted and modified from Carbon Icon Animations ScanMotion (Apache-2.0).
-   The donor path geometry/keyframe relationships are retained; dsh-rice owns
-   the hover/focus capability gates, currentColor theming and reduced motion. */
-@keyframes dsh-rice-search-scanner {
-  0% { transform:translate3d(0,0,0); }
-  10% { transform:translate3d(4px,0,0); }
-  20%,100% { transform:translate3d(0,0,0); }
-}
-@keyframes dsh-rice-search-line-1 {
-  0% { transform:scaleY(1); }
-  8% { transform:scaleY(1.3); }
-  16%,100% { transform:scaleY(1); }
-}
-@keyframes dsh-rice-search-line-2 {
-  0%,4% { transform:scaleY(1); }
-  12% { transform:scaleY(1.3); }
-  20%,100% { transform:scaleY(1); }
-}
-@keyframes dsh-rice-search-line-3 {
-  0%,8% { transform:scaleY(1); }
-  16% { transform:scaleY(1.3); }
-  24%,100% { transform:scaleY(1); }
-}
+   The donor geometry and scanner/bar transform relationship are retained, but
+   the old autonomous 2s envelope is intentionally replaced by interruptible
+   hover/focus state transitions. */
 @keyframes dsh-rice-add-horizontal-nudge {
   0%,100% { transform:translate3d(0,0,0); }
   45% { transform:translate3d(1px,0,0); }
@@ -115,32 +95,38 @@ const RICE_RAIL_MOTION_CSS = `
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-scanner { animation:dsh-rice-search-scanner 2s cubic-bezier(.4,.14,.3,1) infinite; }
-  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-1 { animation:dsh-rice-search-line-1 2s cubic-bezier(.4,.14,.3,1) infinite; }
-  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-2 { animation:dsh-rice-search-line-2 2s cubic-bezier(.4,.14,.3,1) infinite; }
-  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-3 { animation:dsh-rice-search-line-3 2s cubic-bezier(.4,.14,.3,1) infinite; }
+  /* Release defaults are intentionally the reverse of the enter stagger. */
+  [data-dsh-rice-motion="search"] .dsh-rice-motion-search-scanner { transition:transform 100ms cubic-bezier(.2,0,0,1) 90ms; }
+  [data-dsh-rice-motion="search"] .dsh-rice-motion-search-line-1 { transition:transform 100ms cubic-bezier(.2,0,0,1) 60ms; }
+  [data-dsh-rice-motion="search"] .dsh-rice-motion-search-line-2 { transition:transform 100ms cubic-bezier(.2,0,0,1) 30ms; }
+  [data-dsh-rice-motion="search"] .dsh-rice-motion-search-line-3 { transition:transform 100ms cubic-bezier(.2,0,0,1) 0ms; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-scanner { transform:translate3d(4px,0,0); transition-delay:0ms; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-1 { transform:scaleY(1.3); transition-delay:30ms; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-2 { transform:scaleY(1.3); transition-delay:60ms; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-3 { transform:scaleY(1.3); transition-delay:90ms; }
+
   [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-horizontal { animation:dsh-rice-add-horizontal-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
   [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-vertical { animation:dsh-rice-add-vertical-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
 
+  /* Activity's baseline and waveform are the signal layer and remain visible.
+     Only the structural shell participates in the snake-like wipe. */
   [data-dsh-rice-motion="activity"] .dsh-rice-motion-activity-shell-top { transition:clip-path 110ms cubic-bezier(.2,0,0,1) 0ms; }
   [data-dsh-rice-motion="activity"] .dsh-rice-motion-activity-shell-bottom { transition:clip-path 110ms cubic-bezier(.2,0,0,1) 70ms; }
-  [data-dsh-rice-motion="activity"] .dsh-rice-motion-activity-baseline { transition:clip-path 110ms cubic-bezier(.2,0,0,1) 140ms; }
-  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-baseline { clip-path:inset(0 0 0 100%); transition-delay:0ms; }
-  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 100%); transition-delay:70ms; }
-  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-shell-top { clip-path:inset(0 0 0 100%); transition-delay:140ms; }
+  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 100%); transition-delay:0ms; }
+  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-shell-top { clip-path:inset(0 0 0 100%); transition-delay:70ms; }
 }
 
 @media (prefers-reduced-motion: no-preference) and (hover:hover) and (pointer:fine) {
-  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-scanner { animation:dsh-rice-search-scanner 2s cubic-bezier(.4,.14,.3,1) infinite; }
-  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-1 { animation:dsh-rice-search-line-1 2s cubic-bezier(.4,.14,.3,1) infinite; }
-  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-2 { animation:dsh-rice-search-line-2 2s cubic-bezier(.4,.14,.3,1) infinite; }
-  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-3 { animation:dsh-rice-search-line-3 2s cubic-bezier(.4,.14,.3,1) infinite; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-scanner { transform:translate3d(4px,0,0); transition-delay:0ms; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-1 { transform:scaleY(1.3); transition-delay:30ms; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-2 { transform:scaleY(1.3); transition-delay:60ms; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-3 { transform:scaleY(1.3); transition-delay:90ms; }
+
   [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-horizontal { animation:dsh-rice-add-horizontal-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
   [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-vertical { animation:dsh-rice-add-vertical-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
 
-  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-baseline { clip-path:inset(0 0 0 100%); transition-delay:0ms; }
-  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 100%); transition-delay:70ms; }
-  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-top { clip-path:inset(0 0 0 100%); transition-delay:140ms; }
+  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 100%); transition-delay:0ms; }
+  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-top { clip-path:inset(0 0 0 100%); transition-delay:70ms; }
 }
 `
 
