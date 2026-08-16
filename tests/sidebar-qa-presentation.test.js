@@ -32,23 +32,33 @@ test('sidebar QA skin consumes no CSS-module names and does not alter model poli
   assert.match(source, /:has\(> button\):not\(:has\(> textarea\)\)/u)
 })
 
-test('sidebar QA composer send action uses a circular optical seat and icon geometry', async () => {
+test('sidebar QA composer seat mirrors the audited DSH InputBar card surface', async () => {
   const source = await postlude()
-  assert.match(source, /button \{\s*\n\s*position:absolute; right:14px; bottom:15px; width:36px; height:36px;/u)
-  assert.match(source, /border-radius:50%;\s*\n\s*background:transparent;/u)
-  assert.match(source, /button::after \{\s*\n\s*content:''; position:absolute; inset:0; border-radius:50%;\s*\n\s*background:var\(--dsw-alias-brand-primary\);/u)
-  assert.match(source, /button::before \{[\s\S]*content:'';[\s\S]*mask:url\("data:image\/svg\+xml/u)
+  assert.match(source, /border:1px solid var\(--dsw-alias-border-l2-darkmode-thin\); border-radius:22px;/u)
+  assert.match(source, /background:var\(--dsw-specific-input-major\);/u)
+  assert.match(source, /box-shadow:var\(--dsw-shadow-lv2\);/u)
+  assert.match(source, /textarea:focus,[\s\S]*border-color:var\(--dsw-alias-border-l2-darkmode-thin\); outline:none; box-shadow:var\(--dsw-shadow-lv2\);/u)
+  assert.doesNotMatch(source, /textarea:focus[^}]*outline:2px solid var\(--dsw-alias-brand-primary\)/u)
+})
+
+test('sidebar QA send action mirrors the audited DSH InputBar primary geometry', async () => {
+  const source = await postlude()
+  assert.match(source, /button \{\s*\n\s*position:absolute; right:15px; bottom:16px; width:34px; height:34px;/u)
+  assert.match(source, /border-radius:999px;\s*\n\s*background:transparent; color:#fff;/u)
+  assert.match(source, /button::after \{[\s\S]*background:var\(--dsw-alias-button-info-fill\);/u)
+  assert.match(source, /button:hover:not\(:disabled\)::after \{\s*\n\s*background:var\(--dsw-alias-button-info-hover\);/u)
+  assert.match(source, /button::before \{[\s\S]*width:16px; height:16px;[\s\S]*M8\.3125%200\.980183/u)
   assert.doesNotMatch(source, /content:'↑'/u)
 })
 
-test('coarse sidebar QA send target keeps a 36px optical circle inside a 44px hit target', async () => {
+test('coarse sidebar QA send target keeps the InputBar 34px optical circle inside a 44px hit target', async () => {
   const source = await postlude()
-  assert.match(source, /button \{ right:14px; bottom:12px; width:44px; height:44px; \}/u)
-  assert.match(source, /button::after \{ inset:4px; \}/u)
+  assert.match(source, /button \{ right:10px; bottom:11px; width:44px; height:44px; \}/u)
+  assert.match(source, /button::after \{ inset:5px; \}/u)
 })
 
-test('empty sidebar QA composer keeps the send icon and uses opacity for disabled state', async () => {
+test('empty sidebar QA composer keeps the send icon and InputBar disabled opacity', async () => {
   const source = await postlude()
-  assert.match(source, /button:disabled \{\s*\n\s*opacity:\.45; cursor:default;/u)
+  assert.match(source, /button:disabled \{\s*\n\s*opacity:\.4; cursor:default;/u)
   assert.doesNotMatch(source, /button:disabled::before|button:disabled::after/u)
 })
