@@ -51,10 +51,22 @@ test('sidebar QA send action mirrors the audited DSH InputBar primary geometry',
   assert.doesNotMatch(source, /content:'↑'/u)
 })
 
+test('sidebar QA send glyph is pinned to the optical center instead of grid or mask layout', async () => {
+  const source = await postlude()
+  const match = source.match(/\[data-dsh-rice-sidebar-qa\][^\n]*button::before \{([\s\S]*?)\n\}/u)
+  assert.notEqual(match, null)
+  const rule = match?.[1] ?? ''
+  assert.match(rule, /position:absolute; left:50%; top:50%;/u)
+  assert.match(rule, /transform:translate\(-50%,-50%\);/u)
+  assert.match(rule, /background:url\("data:image\/svg\+xml,[^\n]*M8\.3125%200\.980183/u)
+  assert.doesNotMatch(rule, /mask:|-webkit-mask:|position:relative|place-items/u)
+})
+
 test('coarse sidebar QA send target keeps the InputBar 34px optical circle inside a 44px hit target', async () => {
   const source = await postlude()
   assert.match(source, /button \{ right:10px; bottom:11px; width:44px; height:44px; \}/u)
   assert.match(source, /button::after \{ inset:5px; \}/u)
+  assert.match(source, /button::before \{[\s\S]*left:50%; top:50%;[\s\S]*translate\(-50%,-50%\)/u)
 })
 
 test('empty sidebar QA composer keeps the send icon and InputBar disabled opacity', async () => {
