@@ -7,6 +7,7 @@
  */
 const RiceApplicationRailBase = ApplicationRail
 const RiceQuickSwitcherOverlayBase = QuickSwitcherOverlay
+const RiceApplyBase = apply
 
 const RICE_COMPAT_CSS = `
 span[role="tooltip"] { color:var(--dsw-alias-label-primary-inverted); }
@@ -63,6 +64,147 @@ const RICE_ADAPTIVE_CSS = `
 }
 `
 
+/* Optional dsh-sidebar-qa integration. The floating selection affordance
+   already has a stable plugin-owned data host, so it can be presented without
+   knowing any CSS-module class name. The AskPanel gets the second data scope
+   from the descriptor wrapper below; all selectors then stay inside that
+   explicit compatibility boundary. */
+const RICE_SIDEBAR_QA_CSS = `
+[data-dsh-sidebar-qa] > div { margin-top:-2px; }
+[data-dsh-sidebar-qa] button {
+  min-height:28px; padding:5px 9px; border:0; border-radius:9px;
+  background:var(--dsw-specific-menu); color:var(--dsw-alias-label-primary);
+  font:inherit; font-size:12px; line-height:18px; font-weight:600;
+  box-shadow:var(--dsw-shadow-lv1); cursor:pointer;
+}
+[data-dsh-sidebar-qa] button:hover { background:var(--dsw-alias-button-floating-hover); }
+[data-dsh-sidebar-qa] button:active { background:var(--dsw-alias-interactive-bg-active); }
+[data-dsh-sidebar-qa] button:focus-visible { outline:2px solid var(--dsw-alias-brand-primary); outline-offset:2px; }
+
+[data-dsh-rice-sidebar-qa] { height:100%; min-height:0; }
+[data-dsh-rice-sidebar-qa] > div { height:100%; min-height:0; }
+
+/* Follow-up identity strip: keep the plugin's active-state semantics, while
+   removing the extra card frame and turning New follow-up into a compact
+   contextual action. */
+[data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) {
+  gap:4px; padding:6px 8px; border-bottom:0; align-items:center;
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) > button {
+  min-height:28px; padding:4px 8px; border-width:0; border-radius:8px;
+  box-shadow:none; line-height:18px;
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) > button:hover {
+  background:var(--dsw-alias-interactive-bg-hover);
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) > button:last-child {
+  inline-size:28px; min-width:28px; padding-inline:0; border:0;
+  background:transparent; color:var(--dsw-alias-label-secondary); font-size:0;
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) > button:last-child::before {
+  content:'+'; font-size:18px; line-height:1;
+}
+
+/* Composer: one seat, one embedded action. The original textarea/button stay
+   in the DOM with their keyboard behavior and accessible text unchanged. */
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) {
+  position:relative; display:block; padding:8px 10px 10px; border-top:0;
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea {
+  box-sizing:border-box; width:100%; min-height:46px; max-height:160px;
+  resize:none; border:0; border-radius:14px;
+  background:var(--dsw-specific-selector); color:var(--dsw-alias-label-primary);
+  padding:11px 52px 11px 12px; box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l2);
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea:focus {
+  outline:2px solid var(--dsw-alias-brand-primary); outline-offset:-2px;
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button {
+  position:absolute; right:16px; bottom:17px; width:32px; height:32px;
+  display:grid; place-items:center; padding:0; border:0; border-radius:10px;
+  background:var(--dsw-alias-brand-primary); color:var(--dsw-alias-label-primary-foreground);
+  font-size:0; line-height:1; box-shadow:none; cursor:pointer;
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::before {
+  content:'↑'; font-size:18px; line-height:1;
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:hover:not(:disabled) {
+  background:var(--dsw-alias-button-floating-hover); color:var(--dsw-alias-label-primary);
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:focus-visible {
+  outline:2px solid var(--dsw-alias-brand-primary); outline-offset:2px;
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:disabled {
+  opacity:.45; cursor:default;
+}
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:disabled::before { content:'…'; }
+
+@media (any-pointer: coarse) {
+  [data-dsh-sidebar-qa] button { min-width:44px; min-height:44px; padding-inline:12px; }
+  [data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) > button { min-height:44px; }
+  [data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) > button:last-child { inline-size:44px; min-width:44px; }
+  [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea { min-height:52px; padding-right:58px; }
+  [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button { right:14px; bottom:12px; width:44px; height:44px; }
+}
+`
+
+/**
+ * Wrap the sidebar-qa Ask tab in one rice-owned semantic scope. This mutates
+ * the registered descriptor in place because better-sidebar 0.12 exposes
+ * getTab() but no descriptor-replacement API. The mutation is reversible and
+ * guarded by exact descriptor id; no sidebar-qa CSS-module name is consumed.
+ */
+function attachSidebarQaPresentation(service) {
+  if (service === undefined || typeof service.getTab !== 'function') return () => {}
+  let descriptor
+  let original
+  let wrapped
+
+  const restore = () => {
+    if (descriptor !== undefined && wrapped !== undefined && descriptor.component === wrapped) {
+      descriptor.component = original
+    }
+    descriptor = undefined
+    original = undefined
+    wrapped = undefined
+  }
+
+  const sync = () => {
+    const next = service.getTab('dsh-sidebar-qa:ask')
+    if (next === descriptor) return
+    restore()
+    if (next === undefined || typeof next.component !== 'function') return
+
+    const base = next.component
+    function RiceSidebarQaPanel(props) {
+      return h('div', { 'data-dsh-rice-sidebar-qa':'' }, h(base, props))
+    }
+
+    descriptor = next
+    original = base
+    wrapped = RiceSidebarQaPanel
+    descriptor.component = wrapped
+  }
+
+  const unsubscribe = typeof service.subscribe === 'function' ? service.subscribe(sync) : () => {}
+  sync()
+  return () => {
+    unsubscribe()
+    restore()
+  }
+}
+
+/** Dynamically attach only when better-sidebar exists; dsh-rice keeps no hard peer dependency. */
+function installSidebarQaPresentation(ctx) {
+  if (typeof ctx.inject === 'function') {
+    ctx.inject(['betterSidebar'], injectedCtx => attachSidebarQaPresentation(injectedCtx?.betterSidebar ?? ctx.betterSidebar))
+    return
+  }
+  if (ctx.betterSidebar !== undefined && typeof ctx.effect === 'function') {
+    ctx.effect(() => attachSidebarQaPresentation(ctx.betterSidebar), 'dsh-rice: optional sidebar-qa presentation')
+  }
+}
+
 /** Distinguish duplicate visible rows in the polite live-region announcement. */
 activeAnnouncement = function riceActiveAnnouncement(row) {
   if (row === undefined) return ''
@@ -74,7 +216,7 @@ activeAnnouncement = function riceActiveAnnouncement(row) {
 /** Carry bounded compatibility plus adaptive interaction rules with the rail. */
 ApplicationRail = function RiceApplicationRail(props) {
   return h(React.Fragment, null, [
-    h('style', { key:'presentation-compat' }, `${RICE_COMPAT_CSS}\n${RICE_ADAPTIVE_CSS}`),
+    h('style', { key:'presentation-compat' }, `${RICE_COMPAT_CSS}\n${RICE_ADAPTIVE_CSS}\n${RICE_SIDEBAR_QA_CSS}`),
     h(RiceApplicationRailBase, { ...props, key:'rail' }),
   ])
 }
@@ -88,4 +230,10 @@ QuickSwitcherOverlay = function RiceQuickSwitcherOverlay(props) {
     props.uiState.close()
   }
   return h('div', { style:{ display:'contents' }, onKeyDownCapture }, h(RiceQuickSwitcherOverlayBase, props))
+}
+
+/** Preserve the base rice application and add only the optional compatibility adapter. */
+apply = function RiceApply(ctx) {
+  RiceApplyBase(ctx)
+  installSidebarQaPresentation(ctx)
 }
