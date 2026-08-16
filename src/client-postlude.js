@@ -65,21 +65,45 @@ const RICE_ADAPTIVE_CSS = `
 `
 
 const RICE_RAIL_MOTION_CSS = `
-/* The first physical dogfood pass read as three zoom effects. Keep the
-   Material silhouettes at their authored size and animate only one semantic
-   relationship inside each command glyph. */
+/* Physical dogfood rejected both whole-glyph zoom and short one-shot nudges.
+   Sessions now uses a function-shaped scanner choreography; Activity holds a
+   stable hover state by progressively wiping only its shell. New Session is
+   deliberately left on the prior provisional treatment while its icon grammar
+   is evaluated separately. */
 [data-dsh-rice-rail] .dsh-rice-rail-motion-icon { position:relative; z-index:1; display:block; flex:none; }
 [data-dsh-rice-rail] .dsh-rice-rail-motion-part { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; transform:translate3d(0,0,0); }
-[data-dsh-rice-rail] .dsh-rice-motion-search-lens { clip-path:polygon(7% 7%,69% 7%,69% 70%,7% 70%); }
-[data-dsh-rice-rail] .dsh-rice-motion-search-handle { clip-path:polygon(48% 48%,93% 48%,93% 93%,48% 93%); }
 [data-dsh-rice-rail] .dsh-rice-motion-add-horizontal { clip-path:inset(40% 14% 40% 14%); }
 [data-dsh-rice-rail] .dsh-rice-motion-add-vertical { clip-path:inset(14% 40% 14% 40%); }
+[data-dsh-rice-rail] .dsh-rice-motion-search-svg,
 [data-dsh-rice-rail] .dsh-rice-motion-activity-svg { display:block; width:100%; height:100%; fill:currentColor; }
-[data-dsh-rice-rail] .dsh-rice-motion-activity-waveform { transform:translate3d(0,0,0); }
+[data-dsh-rice-rail] .dsh-rice-motion-search-scanner,
+[data-dsh-rice-rail] .dsh-rice-motion-search-line { transform:translate3d(0,0,0); transform-origin:16px 16px; }
+[data-dsh-rice-rail] .dsh-rice-motion-activity-shell-top,
+[data-dsh-rice-rail] .dsh-rice-motion-activity-shell-bottom,
+[data-dsh-rice-rail] .dsh-rice-motion-activity-baseline { clip-path:inset(0 0 0 0); }
 
-@keyframes dsh-rice-search-handle-nudge {
-  0%,100% { transform:translate3d(0,0,0); }
-  45% { transform:translate3d(1px,1px,0); }
+/* Adapted and modified from Carbon Icon Animations ScanMotion (Apache-2.0).
+   The donor path geometry/keyframe relationships are retained; dsh-rice owns
+   the hover/focus capability gates, currentColor theming and reduced motion. */
+@keyframes dsh-rice-search-scanner {
+  0% { transform:translate3d(0,0,0); }
+  10% { transform:translate3d(4px,0,0); }
+  20%,100% { transform:translate3d(0,0,0); }
+}
+@keyframes dsh-rice-search-line-1 {
+  0% { transform:scaleY(1); }
+  8% { transform:scaleY(1.3); }
+  16%,100% { transform:scaleY(1); }
+}
+@keyframes dsh-rice-search-line-2 {
+  0%,4% { transform:scaleY(1); }
+  12% { transform:scaleY(1.3); }
+  20%,100% { transform:scaleY(1); }
+}
+@keyframes dsh-rice-search-line-3 {
+  0%,8% { transform:scaleY(1); }
+  16% { transform:scaleY(1.3); }
+  24%,100% { transform:scaleY(1); }
 }
 @keyframes dsh-rice-add-horizontal-nudge {
   0%,100% { transform:translate3d(0,0,0); }
@@ -89,23 +113,34 @@ const RICE_RAIL_MOTION_CSS = `
   0%,100% { transform:translate3d(0,0,0); }
   45% { transform:translate3d(0,-1px,0); }
 }
-@keyframes dsh-rice-activity-waveform-nudge {
-  0%,100% { transform:translate3d(0,0,0); }
-  45% { transform:translate3d(1px,0,0); }
-}
 
 @media (prefers-reduced-motion: no-preference) {
-  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-handle { animation:dsh-rice-search-handle-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-scanner { animation:dsh-rice-search-scanner 2s cubic-bezier(.4,.14,.3,1) infinite; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-1 { animation:dsh-rice-search-line-1 2s cubic-bezier(.4,.14,.3,1) infinite; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-2 { animation:dsh-rice-search-line-2 2s cubic-bezier(.4,.14,.3,1) infinite; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-3 { animation:dsh-rice-search-line-3 2s cubic-bezier(.4,.14,.3,1) infinite; }
   [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-horizontal { animation:dsh-rice-add-horizontal-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
   [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-vertical { animation:dsh-rice-add-vertical-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
-  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-waveform { animation:dsh-rice-activity-waveform-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+
+  [data-dsh-rice-motion="activity"] .dsh-rice-motion-activity-shell-top { transition:clip-path 110ms cubic-bezier(.2,0,0,1) 0ms; }
+  [data-dsh-rice-motion="activity"] .dsh-rice-motion-activity-shell-bottom { transition:clip-path 110ms cubic-bezier(.2,0,0,1) 70ms; }
+  [data-dsh-rice-motion="activity"] .dsh-rice-motion-activity-baseline { transition:clip-path 110ms cubic-bezier(.2,0,0,1) 140ms; }
+  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-baseline { clip-path:inset(0 0 0 100%); transition-delay:0ms; }
+  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 100%); transition-delay:70ms; }
+  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-shell-top { clip-path:inset(0 0 0 100%); transition-delay:140ms; }
 }
 
 @media (prefers-reduced-motion: no-preference) and (hover:hover) and (pointer:fine) {
-  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-handle { animation:dsh-rice-search-handle-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-scanner { animation:dsh-rice-search-scanner 2s cubic-bezier(.4,.14,.3,1) infinite; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-1 { animation:dsh-rice-search-line-1 2s cubic-bezier(.4,.14,.3,1) infinite; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-2 { animation:dsh-rice-search-line-2 2s cubic-bezier(.4,.14,.3,1) infinite; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-3 { animation:dsh-rice-search-line-3 2s cubic-bezier(.4,.14,.3,1) infinite; }
   [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-horizontal { animation:dsh-rice-add-horizontal-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
   [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-vertical { animation:dsh-rice-add-vertical-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
-  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-waveform { animation:dsh-rice-activity-waveform-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+
+  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-baseline { clip-path:inset(0 0 0 100%); transition-delay:0ms; }
+  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 100%); transition-delay:70ms; }
+  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-top { clip-path:inset(0 0 0 100%); transition-delay:140ms; }
 }
 `
 
@@ -264,8 +299,19 @@ function installSidebarQaPresentation(ctx) {
   }
 }
 
+/* Adapted and modified from Carbon Icon Animations ScanMotion (Apache-2.0).
+   See THIRD_PARTY_NOTICES.md for source and attribution. */
+const RICE_SCAN_MOTION_PATHS = Object.freeze({
+  line1:'M15,9h2v14h-2V9z',
+  line2:'M21,9h2v14h-2V9z',
+  line3:'M27,9h2v14h-2V9z',
+  scanner:'M21,29H5c-1.1,0-2-0.9-2-2V5c0-1.1,0.9-2,2-2h16v2H5v22h16V29z',
+})
+
 const RICE_BROWSE_ACTIVITY_PATHS = Object.freeze({
-  shell:'M96-588v-155.85Q96-776 118.56-796q22.57-20 54.25-20h614.5q31.69 0 54.19 20 22.5 20 22.5 52.15V-588h-72v-156H168v156H96ZM172.69-264q-31.69 0-54.19-20Q96-304 96-336v-180h72v180h624v-180h72v180q0 32-22.56 52-22.57 20-54.25 20h-614.5ZM84-144q-15.3 0-25.65-10.29Q48-164.58 48-179.79t10.35-25.71Q68.7-216 84-216h792q15.3 0 25.65 10.29Q912-195.42 912-180.21t-10.35 25.71Q891.3-144 876-144H84Z',
+  shellTop:'M96-588v-155.85Q96-776 118.56-796q22.57-20 54.25-20h614.5q31.69 0 54.19 20 22.5 20 22.5 52.15V-588h-72v-156H168v156H96Z',
+  shellBottom:'M172.69-264q-31.69 0-54.19-20Q96-304 96-336v-180h72v180h624v-180h72v180q0 32-22.56 52-22.57 20-54.25 20h-614.5Z',
+  baseline:'M84-144q-15.3 0-25.65-10.29Q48-164.58 48-179.79t10.35-25.71Q68.7-216 84-216h792q15.3 0 25.65 10.29Q912-195.42 912-180.21t-10.35 25.71Q891.3-144 876-144H84Z',
   waveform:'M96-516v-72h233q14 0 25 7t17 18l39 72 112-176q5-8 12.42-12.5 7.43-4.5 16.5-4.5 9.08 0 17.08 3.5 8 3.5 13 10.5l61 82h222v72H629q-11 0-21-5t-17-14l-37-50-116 184q-5 8-13.06 12.5-8.07 4.5-16.94 4.5-9.9 0-18.45-5.5Q381-395 376-403l-62-113H96Z',
 })
 
@@ -282,6 +328,27 @@ function riceRailMotionPart(key, className, iconPath, iconSize) {
 }
 
 function RiceRailMotionIcon({ iconPath, iconSize, motion }) {
+  if (motion === 'search') {
+    return h('span', {
+      className:'dsh-rice-rail-motion-icon dsh-rice-rail-motion-search',
+      style:{ width:iconSize, height:iconSize },
+      'aria-hidden':true,
+    }, h('svg', {
+      className:'dsh-rice-rail-icon dsh-rice-motion-search-svg',
+      width:iconSize,
+      height:iconSize,
+      viewBox:'0 0 32 32',
+      fill:'currentColor',
+      focusable:'false',
+      'aria-hidden':true,
+    }, [
+      h('path', { key:'line1', className:'dsh-rice-motion-search-line dsh-rice-motion-search-line-1', d:RICE_SCAN_MOTION_PATHS.line1 }),
+      h('path', { key:'line2', className:'dsh-rice-motion-search-line dsh-rice-motion-search-line-2', d:RICE_SCAN_MOTION_PATHS.line2 }),
+      h('path', { key:'line3', className:'dsh-rice-motion-search-line dsh-rice-motion-search-line-3', d:RICE_SCAN_MOTION_PATHS.line3 }),
+      h('path', { key:'scanner', className:'dsh-rice-motion-search-scanner', d:RICE_SCAN_MOTION_PATHS.scanner }),
+    ]))
+  }
+
   if (motion === 'activity') {
     return h('span', {
       className:'dsh-rice-rail-motion-icon dsh-rice-rail-motion-activity',
@@ -296,20 +363,17 @@ function RiceRailMotionIcon({ iconPath, iconSize, motion }) {
       focusable:'false',
       'aria-hidden':true,
     }, [
-      h('path', { key:'shell', className:'dsh-rice-motion-activity-shell', d:RICE_BROWSE_ACTIVITY_PATHS.shell }),
+      h('path', { key:'shell-top', className:'dsh-rice-motion-activity-shell-top', d:RICE_BROWSE_ACTIVITY_PATHS.shellTop }),
+      h('path', { key:'shell-bottom', className:'dsh-rice-motion-activity-shell-bottom', d:RICE_BROWSE_ACTIVITY_PATHS.shellBottom }),
+      h('path', { key:'baseline', className:'dsh-rice-motion-activity-baseline', d:RICE_BROWSE_ACTIVITY_PATHS.baseline }),
       h('path', { key:'waveform', className:'dsh-rice-motion-activity-waveform', d:RICE_BROWSE_ACTIVITY_PATHS.waveform }),
     ]))
   }
 
-  const parts = motion === 'search'
-    ? [
-        riceRailMotionPart('lens', 'dsh-rice-motion-search-lens', iconPath, iconSize),
-        riceRailMotionPart('handle', 'dsh-rice-motion-search-handle', iconPath, iconSize),
-      ]
-    : [
-        riceRailMotionPart('horizontal', 'dsh-rice-motion-add-horizontal', iconPath, iconSize),
-        riceRailMotionPart('vertical', 'dsh-rice-motion-add-vertical', iconPath, iconSize),
-      ]
+  const parts = [
+    riceRailMotionPart('horizontal', 'dsh-rice-motion-add-horizontal', iconPath, iconSize),
+    riceRailMotionPart('vertical', 'dsh-rice-motion-add-vertical', iconPath, iconSize),
+  ]
   return h('span', {
     className:`dsh-rice-rail-motion-icon dsh-rice-rail-motion-${motion}`,
     style:{ width:iconSize, height:iconSize },
