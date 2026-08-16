@@ -71,19 +71,36 @@ test('client postlude gives duplicate rows deterministic announcement identity',
   assert.match(source, /activeAnnouncement = function riceActiveAnnouncement/u)
 })
 
-test('rail Material Symbols gain bounded semantic micro-motion without a new icon or motion dependency', async () => {
+test('rail Material Symbols use transient semantic part motion without zooming the glyph silhouette', async () => {
   const source = await artifact()
+  const match = source.match(/const RICE_RAIL_MOTION_CSS = `([\s\S]*?)`\n/u)
+  assert.notEqual(match, null)
+  const css = match?.[1] ?? ''
+
   assert.match(source, /RailButton = function RiceAnimatedRailButton/u)
   assert.match(source, /iconPath === MATERIAL_SYMBOL_PATHS\.search/u)
   assert.match(source, /iconPath === MATERIAL_SYMBOL_PATHS\.add/u)
   assert.match(source, /iconPath === MATERIAL_SYMBOL_PATHS\.browseActivity/u)
   assert.match(source, /function riceRailMotionPart[\s\S]*?h\(MaterialSymbol, \{ path:iconPath, size:iconSize \}\)/u)
-  assert.match(source, /dsh-rice-motion-search-lens \{ clip-path:polygon/u)
-  assert.match(source, /dsh-rice-motion-search-handle \{ clip-path:polygon/u)
-  assert.match(source, /dsh-rice-motion-add-horizontal \{ clip-path:inset/u)
-  assert.match(source, /dsh-rice-motion-add-vertical \{ clip-path:inset/u)
-  assert.match(source, /data-dsh-rice-motion="activity".*?dsh-rice-motion-activity-whole/su)
-  assert.match(source, /@media \(prefers-reduced-motion: no-preference\)/u)
-  assert.match(source, /@media \(prefers-reduced-motion: no-preference\) and \(hover:hover\) and \(pointer:fine\)/u)
-  assert.doesNotMatch(source, /require\(['"](?:motion\/react|framer-motion|lucide-react|@fortawesome)/u)
+
+  assert.match(css, /dsh-rice-motion-search-lens \{ clip-path:polygon/u)
+  assert.match(css, /dsh-rice-search-handle-nudge/u)
+  assert.match(css, /45% \{ transform:translate3d\(1px,1px,0\); \}/u)
+  assert.match(css, /dsh-rice-add-horizontal-nudge/u)
+  assert.match(css, /dsh-rice-add-vertical-nudge/u)
+  assert.match(css, /dsh-rice-activity-waveform-nudge/u)
+  assert.match(css, /140ms cubic-bezier\(\.2,0,0,1\) 1 both/u)
+  assert.doesNotMatch(css, /\bscale(?:X|Y)?\(/u)
+  assert.doesNotMatch(css, /\brotate\(/u)
+  assert.doesNotMatch(css, /transition:transform|\binfinite\b/u)
+
+  assert.match(source, /const RICE_BROWSE_ACTIVITY_PATHS = Object\.freeze/u)
+  assert.match(source, /shell:'M96-588/u)
+  assert.match(source, /waveform:'M96-516v-72/u)
+  assert.match(source, /className:'dsh-rice-motion-activity-shell'/u)
+  assert.match(source, /className:'dsh-rice-motion-activity-waveform'/u)
+
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/u)
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\) and \(hover:hover\) and \(pointer:fine\)/u)
+  assert.doesNotMatch(source, /require\(['"](?:motion\/react|framer-motion|lucide-react|@fortawesome|@carbon\/icons-motion)/u)
 })
