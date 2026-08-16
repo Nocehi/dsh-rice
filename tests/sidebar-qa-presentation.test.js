@@ -32,9 +32,23 @@ test('sidebar QA skin consumes no CSS-module names and does not alter model poli
   assert.match(source, /:has\(> button\):not\(:has\(> textarea\)\)/u)
 })
 
-test('empty sidebar QA composer keeps the send arrow and uses opacity for disabled state', async () => {
+test('sidebar QA composer send action uses a circular optical seat and icon geometry', async () => {
   const source = await postlude()
-  assert.match(source, /button::before \{\s*\n\s*content:'↑';/u)
+  assert.match(source, /button \{\s*\n\s*position:absolute; right:14px; bottom:15px; width:36px; height:36px;/u)
+  assert.match(source, /border-radius:50%;\s*\n\s*background:transparent;/u)
+  assert.match(source, /button::after \{\s*\n\s*content:''; position:absolute; inset:0; border-radius:50%;\s*\n\s*background:var\(--dsw-alias-brand-primary\);/u)
+  assert.match(source, /button::before \{[\s\S]*content:'';[\s\S]*mask:url\("data:image\/svg\+xml/u)
+  assert.doesNotMatch(source, /content:'↑'/u)
+})
+
+test('coarse sidebar QA send target keeps a 36px optical circle inside a 44px hit target', async () => {
+  const source = await postlude()
+  assert.match(source, /button \{ right:14px; bottom:12px; width:44px; height:44px; \}/u)
+  assert.match(source, /button::after \{ inset:4px; \}/u)
+})
+
+test('empty sidebar QA composer keeps the send icon and uses opacity for disabled state', async () => {
+  const source = await postlude()
   assert.match(source, /button:disabled \{\s*\n\s*opacity:\.45; cursor:default;/u)
-  assert.doesNotMatch(source, /button:disabled::before/u)
+  assert.doesNotMatch(source, /button:disabled::before|button:disabled::after/u)
 })
