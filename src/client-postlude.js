@@ -65,31 +65,47 @@ const RICE_ADAPTIVE_CSS = `
 `
 
 const RICE_RAIL_MOTION_CSS = `
-/* Keep Google's Apache-2.0 Material Symbols geometry and animate only locally
-   authored presentation layers. No motion library or replacement icon set is
-   introduced. */
+/* The first physical dogfood pass read as three zoom effects. Keep the
+   Material silhouettes at their authored size and animate only one semantic
+   relationship inside each command glyph. */
 [data-dsh-rice-rail] .dsh-rice-rail-motion-icon { position:relative; z-index:1; display:block; flex:none; }
 [data-dsh-rice-rail] .dsh-rice-rail-motion-part { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; transform:translate3d(0,0,0); }
-[data-dsh-rice-rail] .dsh-rice-motion-search-lens { clip-path:polygon(7% 7%,69% 7%,69% 70%,7% 70%); transform-origin:40% 40%; }
-[data-dsh-rice-rail] .dsh-rice-motion-search-handle { clip-path:polygon(48% 48%,93% 48%,93% 93%,48% 93%); transform-origin:58% 58%; }
-[data-dsh-rice-rail] .dsh-rice-motion-add-horizontal { clip-path:inset(40% 14% 40% 14%); transform-origin:center; }
-[data-dsh-rice-rail] .dsh-rice-motion-add-vertical { clip-path:inset(14% 40% 14% 40%); transform-origin:center; }
+[data-dsh-rice-rail] .dsh-rice-motion-search-lens { clip-path:polygon(7% 7%,69% 7%,69% 70%,7% 70%); }
+[data-dsh-rice-rail] .dsh-rice-motion-search-handle { clip-path:polygon(48% 48%,93% 48%,93% 93%,48% 93%); }
+[data-dsh-rice-rail] .dsh-rice-motion-add-horizontal { clip-path:inset(40% 14% 40% 14%); }
+[data-dsh-rice-rail] .dsh-rice-motion-add-vertical { clip-path:inset(14% 40% 14% 40%); }
+[data-dsh-rice-rail] .dsh-rice-motion-activity-svg { display:block; width:100%; height:100%; fill:currentColor; }
+[data-dsh-rice-rail] .dsh-rice-motion-activity-waveform { transform:translate3d(0,0,0); }
+
+@keyframes dsh-rice-search-handle-nudge {
+  0%,100% { transform:translate3d(0,0,0); }
+  45% { transform:translate3d(1px,1px,0); }
+}
+@keyframes dsh-rice-add-horizontal-nudge {
+  0%,100% { transform:translate3d(0,0,0); }
+  45% { transform:translate3d(1px,0,0); }
+}
+@keyframes dsh-rice-add-vertical-nudge {
+  0%,100% { transform:translate3d(0,0,0); }
+  45% { transform:translate3d(0,-1px,0); }
+}
+@keyframes dsh-rice-activity-waveform-nudge {
+  0%,100% { transform:translate3d(0,0,0); }
+  45% { transform:translate3d(1px,0,0); }
+}
 
 @media (prefers-reduced-motion: no-preference) {
-  [data-dsh-rice-rail] .dsh-rice-rail-motion-part { transition:transform 160ms cubic-bezier(.2,0,0,1); }
-  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-lens { transform:translate(-.25px,-.25px) scale(1.025); }
-  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-handle { transform:translate(1px,1px) rotate(-2deg); }
-  [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-horizontal { transform:scaleX(1.08); }
-  [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-vertical { transform:scaleY(1.08); }
-  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-whole { transform:translateY(-.5px) scaleY(1.035); }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-handle { animation:dsh-rice-search-handle-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+  [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-horizontal { animation:dsh-rice-add-horizontal-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+  [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-vertical { animation:dsh-rice-add-vertical-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-waveform { animation:dsh-rice-activity-waveform-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
 }
 
 @media (prefers-reduced-motion: no-preference) and (hover:hover) and (pointer:fine) {
-  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-lens { transform:translate(-.25px,-.25px) scale(1.025); }
-  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-handle { transform:translate(1px,1px) rotate(-2deg); }
-  [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-horizontal { transform:scaleX(1.08); }
-  [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-vertical { transform:scaleY(1.08); }
-  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-whole { transform:translateY(-.5px) scaleY(1.035); }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-handle { animation:dsh-rice-search-handle-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+  [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-horizontal { animation:dsh-rice-add-horizontal-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+  [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-vertical { animation:dsh-rice-add-vertical-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
+  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-waveform { animation:dsh-rice-activity-waveform-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
 }
 `
 
@@ -248,6 +264,11 @@ function installSidebarQaPresentation(ctx) {
   }
 }
 
+const RICE_BROWSE_ACTIVITY_PATHS = Object.freeze({
+  shell:'M96-588v-155.85Q96-776 118.56-796q22.57-20 54.25-20h614.5q31.69 0 54.19 20 22.5 20 22.5 52.15V-588h-72v-156H168v156H96ZM172.69-264q-31.69 0-54.19-20Q96-304 96-336v-180h72v180h624v-180h72v180q0 32-22.56 52-22.57 20-54.25 20h-614.5ZM84-144q-15.3 0-25.65-10.29Q48-164.58 48-179.79t10.35-25.71Q68.7-216 84-216h792q15.3 0 25.65 10.29Q912-195.42 912-180.21t-10.35 25.71Q891.3-144 876-144H84Z',
+  waveform:'M96-516v-72h233q14 0 25 7t17 18l39 72 112-176q5-8 12.42-12.5 7.43-4.5 16.5-4.5 9.08 0 17.08 3.5 8 3.5 13 10.5l61 82h222v72H629q-11 0-21-5t-17-14l-37-50-116 184q-5 8-13.06 12.5-8.07 4.5-16.94 4.5-9.9 0-18.45-5.5Q381-395 376-403l-62-113H96Z',
+})
+
 function riceRailMotionKind(iconPath) {
   if (iconPath === MATERIAL_SYMBOL_PATHS.search) return 'search'
   if (iconPath === MATERIAL_SYMBOL_PATHS.add) return 'add'
@@ -261,20 +282,34 @@ function riceRailMotionPart(key, className, iconPath, iconSize) {
 }
 
 function RiceRailMotionIcon({ iconPath, iconSize, motion }) {
-  let parts
-  if (motion === 'search') {
-    parts = [
-      riceRailMotionPart('lens', 'dsh-rice-motion-search-lens', iconPath, iconSize),
-      riceRailMotionPart('handle', 'dsh-rice-motion-search-handle', iconPath, iconSize),
-    ]
-  } else if (motion === 'add') {
-    parts = [
-      riceRailMotionPart('horizontal', 'dsh-rice-motion-add-horizontal', iconPath, iconSize),
-      riceRailMotionPart('vertical', 'dsh-rice-motion-add-vertical', iconPath, iconSize),
-    ]
-  } else {
-    parts = [riceRailMotionPart('whole', 'dsh-rice-motion-activity-whole', iconPath, iconSize)]
+  if (motion === 'activity') {
+    return h('span', {
+      className:'dsh-rice-rail-motion-icon dsh-rice-rail-motion-activity',
+      style:{ width:iconSize, height:iconSize },
+      'aria-hidden':true,
+    }, h('svg', {
+      className:'dsh-rice-rail-icon dsh-rice-motion-activity-svg',
+      width:iconSize,
+      height:iconSize,
+      viewBox:'0 -960 960 960',
+      fill:'currentColor',
+      focusable:'false',
+      'aria-hidden':true,
+    }, [
+      h('path', { key:'shell', className:'dsh-rice-motion-activity-shell', d:RICE_BROWSE_ACTIVITY_PATHS.shell }),
+      h('path', { key:'waveform', className:'dsh-rice-motion-activity-waveform', d:RICE_BROWSE_ACTIVITY_PATHS.waveform }),
+    ]))
   }
+
+  const parts = motion === 'search'
+    ? [
+        riceRailMotionPart('lens', 'dsh-rice-motion-search-lens', iconPath, iconSize),
+        riceRailMotionPart('handle', 'dsh-rice-motion-search-handle', iconPath, iconSize),
+      ]
+    : [
+        riceRailMotionPart('horizontal', 'dsh-rice-motion-add-horizontal', iconPath, iconSize),
+        riceRailMotionPart('vertical', 'dsh-rice-motion-add-vertical', iconPath, iconSize),
+      ]
   return h('span', {
     className:`dsh-rice-rail-motion-icon dsh-rice-rail-motion-${motion}`,
     style:{ width:iconSize, height:iconSize },
