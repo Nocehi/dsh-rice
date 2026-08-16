@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -73,4 +73,11 @@ if (JSON.stringify(requires) !== JSON.stringify(EXPECTED_REQUIRES)) {
   throw new Error(`dsh-rice build: generated artifact requires must be ${JSON.stringify(EXPECTED_REQUIRES)}; got ${JSON.stringify(requires)}`)
 }
 await mkdir(dirname(outputPath), { recursive: true })
-await writeFile(outputPath, artifact, 'utf8')
+const tempOutputPath = `${outputPath}.${process.pid}.tmp`
+await writeFile(tempOutputPath, artifact, 'utf8')
+try {
+  await rename(tempOutputPath, outputPath)
+} catch (error) {
+  await rm(tempOutputPath, { force:true })
+  throw error
+}
