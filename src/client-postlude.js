@@ -105,55 +105,58 @@ const RICE_SIDEBAR_QA_CSS = `
   content:'+'; font-size:18px; line-height:1;
 }
 
-/* Composer: one seat, one embedded action. The original textarea/button stay
-   in the DOM with their keyboard behavior and accessible text unchanged. */
+/* Composer: one seat, one embedded action. Mirror the audited DSH InputBar
+   card roles (l2-thin stroke, 22px shape, input-major fill, lv2 elevation)
+   instead of inventing a brand-colored focus border. */
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) {
   position:relative; display:block; padding:8px 10px 10px; border-top:0;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea {
   box-sizing:border-box; width:100%; min-height:46px; max-height:160px;
-  resize:none; border:0; border-radius:14px;
-  background:var(--dsw-specific-selector); color:var(--dsw-alias-label-primary);
-  padding:11px 52px 11px 12px; box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l2);
+  resize:none; border:1px solid var(--dsw-alias-border-l2-darkmode-thin); border-radius:22px;
+  outline:none; background:var(--dsw-specific-input-major); color:var(--dsw-alias-label-primary);
+  padding:11px 52px 11px 14px; box-shadow:var(--dsw-shadow-lv2);
 }
-[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea:focus {
-  outline:2px solid var(--dsw-alias-brand-primary); outline-offset:-2px;
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea:focus,
+[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea:focus-visible {
+  border-color:var(--dsw-alias-border-l2-darkmode-thin); outline:none; box-shadow:var(--dsw-shadow-lv2);
 }
+
+/* Primary send: use the same optical contract as DSH InputBar.primary — a
+   34px circle, info-fill/info-hover, static white, and the exact 16px arrow
+   path. Coarse input enlarges only the hit target, not this optical seat. */
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button {
-  position:absolute; right:14px; bottom:15px; width:36px; height:36px;
-  display:grid; place-items:center; padding:0; border:0; border-radius:50%;
-  background:transparent; color:var(--dsw-alias-label-primary-foreground);
-  font-size:0; line-height:1; box-shadow:none; cursor:pointer;
+  position:absolute; right:15px; bottom:16px; width:34px; height:34px;
+  display:grid; place-items:center; padding:0; border:0; border-radius:999px;
+  background:transparent; color:#fff; font-size:0; line-height:1; box-shadow:none; cursor:pointer;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::after {
-  content:''; position:absolute; inset:0; border-radius:50%;
-  background:var(--dsw-alias-brand-primary); z-index:0;
+  content:''; position:absolute; inset:0; border-radius:999px;
+  background:var(--dsw-alias-button-info-fill); z-index:0;
+  transition:background-color 100ms ease;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::before {
-  content:''; position:relative; z-index:1; width:20px; height:20px; background:currentColor;
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12%2019V5M6%2011l6-6%206%206' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/20px 20px no-repeat;
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12%2019V5M6%2011l6-6%206%206' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/20px 20px no-repeat;
-}
-[data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:hover:not(:disabled) {
-  color:var(--dsw-alias-label-primary);
+  content:''; position:relative; z-index:1; width:16px; height:16px; background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2016%2016%27%3E%3Cpath%20d%3D%27M8.3125%200.980183C8.66767%201.0531%208.97902%201.20418%209.2627%201.43233C9.48724%201.61297%209.73029%201.85793%209.97949%202.10714L14.707%206.83468L13.293%208.24874L9%203.95577V15.0417H7V3.95577L2.70703%208.24874L1.29297%206.83468L6.02051%202.10714C6.26971%201.85793%206.51277%201.61297%206.7373%201.43233C6.97662%201.23986%207.28445%201.04402%207.6875%200.980183C7.8973%200.947006%208.1031%200.95516%208.3125%200.980183Z%27%20fill%3D%27black%27%2F%3E%3C%2Fsvg%3E") center/16px 16px no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2016%2016%27%3E%3Cpath%20d%3D%27M8.3125%200.980183C8.66767%201.0531%208.97902%201.20418%209.2627%201.43233C9.48724%201.61297%209.73029%201.85793%209.97949%202.10714L14.707%206.83468L13.293%208.24874L9%203.95577V15.0417H7V3.95577L2.70703%208.24874L1.29297%206.83468L6.02051%202.10714C6.26971%201.85793%206.51277%201.61297%206.7373%201.43233C6.97662%201.23986%207.28445%201.04402%207.6875%200.980183C7.8973%200.947006%208.1031%200.95516%208.3125%200.980183Z%27%20fill%3D%27black%27%2F%3E%3C%2Fsvg%3E") center/16px 16px no-repeat;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:hover:not(:disabled)::after {
-  background:var(--dsw-alias-button-floating-hover);
+  background:var(--dsw-alias-button-info-hover);
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:focus-visible {
   outline:2px solid var(--dsw-alias-brand-primary); outline-offset:2px;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:disabled {
-  opacity:.45; cursor:default;
+  opacity:.4; cursor:default;
 }
 
 @media (any-pointer: coarse) {
   [data-dsh-sidebar-qa] button { min-width:44px; min-height:44px; padding-inline:12px; }
   [data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) > button { min-height:44px; }
   [data-dsh-rice-sidebar-qa] > div > div:has(> button):not(:has(> textarea)) > button:last-child { inline-size:44px; min-width:44px; }
-  [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea { min-height:52px; padding-right:58px; }
-  [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button { right:14px; bottom:12px; width:44px; height:44px; }
-  [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::after { inset:4px; }
+  [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > textarea { min-height:52px; padding-right:62px; }
+  [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button { right:10px; bottom:11px; width:44px; height:44px; }
+  [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::after { inset:5px; }
 }
 `
 
