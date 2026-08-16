@@ -124,10 +124,12 @@ const RICE_SIDEBAR_QA_CSS = `
 
 /* Primary send: use the same optical contract as DSH InputBar.primary — a
    34px circle, info-fill/info-hover, static white, and the exact 16px arrow
-   path. Coarse input enlarges only the hit target, not this optical seat. */
+   path. The glyph is absolutely centered on the button/circle center instead
+   of participating in grid layout, so the 44px coarse hit target cannot move
+   the 34px optical glyph relationship. */
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button {
   position:absolute; right:15px; bottom:16px; width:34px; height:34px;
-  display:grid; place-items:center; padding:0; border:0; border-radius:999px;
+  padding:0; border:0; border-radius:999px;
   background:transparent; color:#fff; font-size:0; line-height:1; box-shadow:none; cursor:pointer;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::after {
@@ -136,9 +138,9 @@ const RICE_SIDEBAR_QA_CSS = `
   transition:background-color 100ms ease;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button::before {
-  content:''; position:relative; z-index:1; width:16px; height:16px; background:currentColor;
-  -webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2016%2016%27%3E%3Cpath%20d%3D%27M8.3125%200.980183C8.66767%201.0531%208.97902%201.20418%209.2627%201.43233C9.48724%201.61297%209.73029%201.85793%209.97949%202.10714L14.707%206.83468L13.293%208.24874L9%203.95577V15.0417H7V3.95577L2.70703%208.24874L1.29297%206.83468L6.02051%202.10714C6.26971%201.85793%206.51277%201.61297%206.7373%201.43233C6.97662%201.23986%207.28445%201.04402%207.6875%200.980183C7.8973%200.947006%208.1031%200.95516%208.3125%200.980183Z%27%20fill%3D%27black%27%2F%3E%3C%2Fsvg%3E") center/16px 16px no-repeat;
-  mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2016%2016%27%3E%3Cpath%20d%3D%27M8.3125%200.980183C8.66767%201.0531%208.97902%201.20418%209.2627%201.43233C9.48724%201.61297%209.73029%201.85793%209.97949%202.10714L14.707%206.83468L13.293%208.24874L9%203.95577V15.0417H7V3.95577L2.70703%208.24874L1.29297%206.83468L6.02051%202.10714C6.26971%201.85793%206.51277%201.61297%206.7373%201.43233C6.97662%201.23986%207.28445%201.04402%207.6875%200.980183C7.8973%200.947006%208.1031%200.95516%208.3125%200.980183Z%27%20fill%3D%27black%27%2F%3E%3C%2Fsvg%3E") center/16px 16px no-repeat;
+  content:''; position:absolute; left:50%; top:50%; z-index:1; width:16px; height:16px;
+  transform:translate(-50%,-50%); pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2016%2016%27%3E%3Cpath%20d%3D%27M8.3125%200.980183C8.66767%201.0531%208.97902%201.20418%209.2627%201.43233C9.48724%201.61297%209.73029%201.85793%209.97949%202.10714L14.707%206.83468L13.293%208.24874L9%203.95577V15.0417H7V3.95577L2.70703%208.24874L1.29297%206.83468L6.02051%202.10714C6.26971%201.85793%206.51277%201.61297%206.7373%201.43233C6.97662%201.23986%207.28445%201.04402%207.6875%200.980183C7.8973%200.947006%208.1031%200.95516%208.3125%200.980183Z%27%20fill%3D%27%23fff%27%2F%3E%3C%2Fsvg%3E") center/16px 16px no-repeat;
 }
 [data-dsh-rice-sidebar-qa] > div > div:has(> textarea) > button:hover:not(:disabled)::after {
   background:var(--dsw-alias-button-info-hover);
