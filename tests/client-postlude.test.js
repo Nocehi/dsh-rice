@@ -71,7 +71,7 @@ test('client postlude gives duplicate rows deterministic announcement identity',
   assert.match(source, /activeAnnouncement = function riceActiveAnnouncement/u)
 })
 
-test('rail Sessions reverses from hover state and Activity preserves its signal layer', async () => {
+test('rail Sessions is a 20px reversible scan, Add is static, and Activity preserves its signal layer', async () => {
   const source = await artifact()
   const match = source.match(/const RICE_RAIL_MOTION_CSS = `([\s\S]*?)`\n/u)
   assert.notEqual(match, null)
@@ -79,17 +79,16 @@ test('rail Sessions reverses from hover state and Activity preserves its signal 
 
   assert.match(source, /RailButton = function RiceAnimatedRailButton/u)
   assert.match(source, /iconPath === MATERIAL_SYMBOL_PATHS\.search/u)
-  assert.match(source, /iconPath === MATERIAL_SYMBOL_PATHS\.add/u)
   assert.match(source, /iconPath === MATERIAL_SYMBOL_PATHS\.browseActivity/u)
+  assert.doesNotMatch(source, /iconPath === MATERIAL_SYMBOL_PATHS\.add/u)
 
+  assert.match(source, /const RICE_SCAN_ICON_SIZE = 20/u)
   assert.match(source, /const RICE_SCAN_MOTION_PATHS = Object\.freeze/u)
   assert.match(source, /line1:'M15,9h2v14h-2V9z'/u)
   assert.match(source, /scanner:'M21,29H5c-1\.1,0-2-0\.9-2-2V5/u)
+  assert.match(source, /style:\{ width:RICE_SCAN_ICON_SIZE, height:RICE_SCAN_ICON_SIZE \}/u)
+  assert.match(source, /width:RICE_SCAN_ICON_SIZE,\s*\n\s*height:RICE_SCAN_ICON_SIZE,/u)
   assert.match(source, /viewBox:'0 0 32 32'/u)
-  assert.match(source, /dsh-rice-motion-search-scanner/u)
-  assert.match(source, /dsh-rice-motion-search-line-1/u)
-  assert.match(source, /dsh-rice-motion-search-line-2/u)
-  assert.match(source, /dsh-rice-motion-search-line-3/u)
   assert.match(css, /dsh-rice-motion-search-scanner \{ transition:transform 100ms cubic-bezier\(\.2,0,0,1\) 90ms; \}/u)
   assert.match(css, /dsh-rice-motion-search-line-1 \{ transition:transform 100ms cubic-bezier\(\.2,0,0,1\) 60ms; \}/u)
   assert.match(css, /dsh-rice-motion-search-line-2 \{ transition:transform 100ms cubic-bezier\(\.2,0,0,1\) 30ms; \}/u)
@@ -100,6 +99,9 @@ test('rail Sessions reverses from hover state and Activity preserves its signal 
   assert.match(css, /\[data-dsh-rice-motion="search"\]:focus-visible \.dsh-rice-motion-search-scanner \{ transform:translate3d\(4px,0,0\); transition-delay:0ms; \}/u)
   assert.doesNotMatch(css, /@keyframes dsh-rice-search|dsh-rice-search-scanner 2s|\binfinite\b/u)
   assert.doesNotMatch(source, /dsh-rice-motion-search-lens|dsh-rice-motion-search-handle|dsh-rice-search-handle-nudge/u)
+
+  assert.match(source, /key:'new'[\s\S]*?iconPath:MATERIAL_SYMBOL_PATHS\.add, iconSize:24/u)
+  assert.doesNotMatch(source, /dsh-rice-motion-add|dsh-rice-add-horizontal-nudge|dsh-rice-add-vertical-nudge|riceRailMotionPart/u)
 
   assert.match(source, /const RICE_BROWSE_ACTIVITY_PATHS = Object\.freeze/u)
   assert.match(source, /shellTop:'M96-588/u)
@@ -117,10 +119,6 @@ test('rail Sessions reverses from hover state and Activity preserves its signal 
   assert.match(css, /\[data-dsh-rice-motion="activity"\]:focus-visible \.dsh-rice-motion-activity-shell-bottom \{ clip-path:inset\(0 0 0 100%\); transition-delay:0ms; \}/u)
   assert.doesNotMatch(css, /dsh-rice-motion-activity-baseline|dsh-rice-motion-activity-waveform/u)
   assert.doesNotMatch(source, /dsh-rice-activity-waveform-nudge/u)
-
-  assert.match(css, /dsh-rice-add-horizontal-nudge/u)
-  assert.match(css, /dsh-rice-add-vertical-nudge/u)
-  assert.match(css, /140ms cubic-bezier\(\.2,0,0,1\) 1 both/u)
 
   assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/u)
   assert.match(css, /@media \(prefers-reduced-motion: no-preference\) and \(hover:hover\) and \(pointer:fine\)/u)
