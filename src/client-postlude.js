@@ -66,14 +66,10 @@ const RICE_ADAPTIVE_CSS = `
 
 const RICE_RAIL_MOTION_CSS = `
 /* Physical dogfood rejected whole-glyph zoom, one-shot nudges, and an
-   autonomous scanner loop. Sessions and Activity now model hover/focus as a
-   reversible state transition: entering advances the semantic parts, holding
-   keeps the active pose, and release unwinds from the current rendered state.
-   New Session remains on its prior provisional treatment. */
+   autonomous scanner loop. Sessions and Activity model hover/focus as
+   reversible state transitions; New Session stays static until its icon
+   grammar is settled. */
 [data-dsh-rice-rail] .dsh-rice-rail-motion-icon { position:relative; z-index:1; display:block; flex:none; }
-[data-dsh-rice-rail] .dsh-rice-rail-motion-part { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; transform:translate3d(0,0,0); }
-[data-dsh-rice-rail] .dsh-rice-motion-add-horizontal { clip-path:inset(40% 14% 40% 14%); }
-[data-dsh-rice-rail] .dsh-rice-motion-add-vertical { clip-path:inset(14% 40% 14% 40%); }
 [data-dsh-rice-rail] .dsh-rice-motion-search-svg,
 [data-dsh-rice-rail] .dsh-rice-motion-activity-svg { display:block; width:100%; height:100%; fill:currentColor; }
 [data-dsh-rice-rail] .dsh-rice-motion-search-scanner { transform:translate3d(0,0,0); transform-origin:16px 16px; }
@@ -85,15 +81,6 @@ const RICE_RAIL_MOTION_CSS = `
    The donor geometry and scanner/bar transform relationship are retained, but
    the old autonomous 2s envelope is intentionally replaced by interruptible
    hover/focus state transitions. */
-@keyframes dsh-rice-add-horizontal-nudge {
-  0%,100% { transform:translate3d(0,0,0); }
-  45% { transform:translate3d(1px,0,0); }
-}
-@keyframes dsh-rice-add-vertical-nudge {
-  0%,100% { transform:translate3d(0,0,0); }
-  45% { transform:translate3d(0,-1px,0); }
-}
-
 @media (prefers-reduced-motion: no-preference) {
   /* Release defaults are intentionally the reverse of the enter stagger. */
   [data-dsh-rice-motion="search"] .dsh-rice-motion-search-scanner { transition:transform 100ms cubic-bezier(.2,0,0,1) 90ms; }
@@ -104,9 +91,6 @@ const RICE_RAIL_MOTION_CSS = `
   [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-1 { transform:scaleY(1.3); transition-delay:30ms; }
   [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-2 { transform:scaleY(1.3); transition-delay:60ms; }
   [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-3 { transform:scaleY(1.3); transition-delay:90ms; }
-
-  [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-horizontal { animation:dsh-rice-add-horizontal-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
-  [data-dsh-rice-motion="add"]:focus-visible .dsh-rice-motion-add-vertical { animation:dsh-rice-add-vertical-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
 
   /* Activity's baseline and waveform are the signal layer and remain visible.
      Only the structural shell participates in the snake-like wipe. */
@@ -121,9 +105,6 @@ const RICE_RAIL_MOTION_CSS = `
   [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-1 { transform:scaleY(1.3); transition-delay:30ms; }
   [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-2 { transform:scaleY(1.3); transition-delay:60ms; }
   [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-3 { transform:scaleY(1.3); transition-delay:90ms; }
-
-  [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-horizontal { animation:dsh-rice-add-horizontal-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
-  [data-dsh-rice-motion="add"]:hover .dsh-rice-motion-add-vertical { animation:dsh-rice-add-vertical-nudge 140ms cubic-bezier(.2,0,0,1) 1 both; }
 
   [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 100%); transition-delay:0ms; }
   [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-top { clip-path:inset(0 0 0 100%); transition-delay:70ms; }
@@ -287,6 +268,7 @@ function installSidebarQaPresentation(ctx) {
 
 /* Adapted and modified from Carbon Icon Animations ScanMotion (Apache-2.0).
    See THIRD_PARTY_NOTICES.md for source and attribution. */
+const RICE_SCAN_ICON_SIZE = 20
 const RICE_SCAN_MOTION_PATHS = Object.freeze({
   line1:'M15,9h2v14h-2V9z',
   line2:'M21,9h2v14h-2V9z',
@@ -303,26 +285,20 @@ const RICE_BROWSE_ACTIVITY_PATHS = Object.freeze({
 
 function riceRailMotionKind(iconPath) {
   if (iconPath === MATERIAL_SYMBOL_PATHS.search) return 'search'
-  if (iconPath === MATERIAL_SYMBOL_PATHS.add) return 'add'
   if (iconPath === MATERIAL_SYMBOL_PATHS.browseActivity) return 'activity'
   return undefined
-}
-
-function riceRailMotionPart(key, className, iconPath, iconSize) {
-  return h('span', { key, className:`dsh-rice-rail-motion-part ${className}`, 'aria-hidden':true },
-    h(MaterialSymbol, { path:iconPath, size:iconSize }))
 }
 
 function RiceRailMotionIcon({ iconPath, iconSize, motion }) {
   if (motion === 'search') {
     return h('span', {
       className:'dsh-rice-rail-motion-icon dsh-rice-rail-motion-search',
-      style:{ width:iconSize, height:iconSize },
+      style:{ width:RICE_SCAN_ICON_SIZE, height:RICE_SCAN_ICON_SIZE },
       'aria-hidden':true,
     }, h('svg', {
       className:'dsh-rice-rail-icon dsh-rice-motion-search-svg',
-      width:iconSize,
-      height:iconSize,
+      width:RICE_SCAN_ICON_SIZE,
+      height:RICE_SCAN_ICON_SIZE,
       viewBox:'0 0 32 32',
       fill:'currentColor',
       focusable:'false',
@@ -356,15 +332,7 @@ function RiceRailMotionIcon({ iconPath, iconSize, motion }) {
     ]))
   }
 
-  const parts = [
-    riceRailMotionPart('horizontal', 'dsh-rice-motion-add-horizontal', iconPath, iconSize),
-    riceRailMotionPart('vertical', 'dsh-rice-motion-add-vertical', iconPath, iconSize),
-  ]
-  return h('span', {
-    className:`dsh-rice-rail-motion-icon dsh-rice-rail-motion-${motion}`,
-    style:{ width:iconSize, height:iconSize },
-    'aria-hidden':true,
-  }, parts)
+  return h(MaterialSymbol, { path:iconPath, size:iconSize })
 }
 
 RailButton = function RiceAnimatedRailButton({ label, iconPath, iconSize = 20, badge, onClick }) {
