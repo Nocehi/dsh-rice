@@ -2,33 +2,49 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-const surfacePath = new URL('../src/surface-morph.js', import.meta.url)
-const artifactPath = new URL('../lib/client.js', import.meta.url)
+const source = await readFile(new URL('../src/surface-morph.js', import.meta.url), 'utf8')
 
-test('surface morph is an isolated sharp-DOM layer for Sessions and Activity', async () => {
-  const source = await readFile(surfacePath, 'utf8')
+function expectSource(pattern, message) {
+  assert.match(source, pattern, message)
+}
 
-  assert.match(source, /motion !== 'search' && motion !== 'activity'/u)
-  assert.match(source, /Math\.min\(36, rect\.width\)/u)
-  assert.match(source, /getBoundingClientRect\(\)/u)
-  assert.match(source, /feGaussianBlur/u)
-  assert.match(source, /feColorMatrix/u)
-  assert.match(source, /className:'dsh-rice-surface-morph-tether'/u)
-  assert.match(source, /React\.cloneElement\(base/u)
-  assert.match(source, /panelIndex/u)
-
-  assert.doesNotMatch(source, /liquid-gooey/u)
-  assert.doesNotMatch(source, /^\s*(?:import|export)\s/mu)
+test('local surface continuity is proximity gated to one 56px rail width', () => {
+  expectSource(/RICE_LOCAL_SURFACE_DISTANCE_PX = 56/u)
+  expectSource(/Math\.hypot\(dx, dy\)/u)
+  expectSource(/geometry\.distance <= RICE_LOCAL_SURFACE_DISTANCE_PX/u)
+  expectSource(/riceFacingAxisPoints/u)
 })
 
-test('surface morph preserves the browser require boundary and reduced-motion path', async () => {
-  const source = await readFile(surfacePath, 'utf8')
-  const artifact = await readFile(artifactPath, 'utf8')
-  const requires = [...artifact.matchAll(/\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/gu)].map(match => match[1])
+test('standard accessible relationships drive the generic experiment', () => {
+  expectSource(/\[aria-controls\]\[aria-expanded\], summary/u)
+  expectSource(/getElementById/u)
+  expectSource(/closest\?\.\('details'\)/u)
+  expectSource(/MutationObserver/u)
+  expectSource(/requestAnimationFrame/u)
+  expectSource(/ResizeObserver/u)
+})
 
-  assert.deepEqual(requires, ['react', '@deepseek-ai/dsh-client-ui-primitives'])
-  assert.match(source, /@media \(prefers-reduced-motion: reduce\)/u)
-  assert.match(source, /\[data-dsh-rice-surface-morph-layer\] \{ display:none; \}/u)
-  assert.match(source, /RiceSurfaceMorphApplicationRailBase/u)
-  assert.match(source, /RiceQuickSwitcherOverlayBase\(props\)/u)
+test('local bridge is presentation only and reduced-motion safe', () => {
+  expectSource(/pointer-events: none/u)
+  expectSource(/aria-hidden/u)
+  expectSource(/prefers-reduced-motion: reduce/u)
+  assert.doesNotMatch(source, /setTimeout\s*\(/u)
+  assert.doesNotMatch(source, /feGaussianBlur|rice-surface-goo|<filter|<use/u)
+})
+
+test('better sidebar integration uses the public service inside dsh-rice', () => {
+  expectSource(/ctx\.inject\(\['betterSidebar'\]/u)
+  expectSource(/service\.getSnapshot\(\)/u)
+  expectSource(/service\.subscribeState\(refresh\)/u)
+  expectSource(/snapshot\?\.state/u)
+  expectSource(/data-rice-better-sidebar-panel-open/u)
+  expectSource(/--rice-better-sidebar-width/u)
+  assert.doesNotMatch(source, /\.dsh-better-sidebar|\[class\*=["']sidebar/u)
+})
+
+test('surface experiment composes after the existing rice apply wrapper', () => {
+  expectSource(/const RiceLocalSurfaceApplyBase = apply/u)
+  expectSource(/RiceLocalSurfaceApplyBase\(ctx\)/u)
+  expectSource(/ctx\.effect\(\(\) => riceInstallLocalSurfaceContinuity\(document\)\)/u)
+  expectSource(/globalThis\.RiceSurfaceMorph/u)
 })

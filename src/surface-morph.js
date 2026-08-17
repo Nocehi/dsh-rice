@@ -1,312 +1,467 @@
 /**
- * Isolated surface-topology prototype for the transient Sessions / Activity
- * switcher. This file is concatenated after client-postlude.js, so it can wrap
- * the already-rice-owned rail and overlay without adding another platform
- * module or runtime dependency.
+ * Proximity-gated surface-continuity experiment.
  *
- * The liquid layer is presentation-only: a filtered SVG silhouette sits
- * between the existing backdrop and the real dialog DOM. Text, controls,
- * focus, ARIA, hit targets, and command behavior remain on the real DOM.
+ * This file is concatenated after client-postlude.js. It intentionally stays
+ * inside dsh-rice: host surfaces participate through standards-based DOM
+ * relations, while dsh-better-sidebar is observed only through its public
+ * `betterSidebar` client service.
  */
-const RiceSurfaceMorphRailButtonBase = RailButton
-const RiceSurfaceMorphApplicationRailBase = ApplicationRail
-
-const RICE_SURFACE_MORPH_FRESH_MS = 500
-const RICE_SURFACE_MORPH_LIFETIME_MS = 340
-
-const RICE_SURFACE_MORPH_CSS = `
-[data-dsh-rice-surface-morph-layer] {
-  position:fixed; inset:0; width:100vw; height:100vh; overflow:visible;
-  pointer-events:none;
+const RICE_LOCAL_SURFACE_DISTANCE_PX = 56
+const RICE_LOCAL_SURFACE_STYLE_ID = 'dsh-rice-local-surface-style'
+const RICE_LOCAL_SURFACE_TRIGGER_SELECTOR = '[aria-controls][aria-expanded], summary'
+const RICE_LOCAL_SURFACE_SETTLE_FRAMES = 18
+const RICE_LOCAL_SURFACE_CSS = `
+.rice-local-surface-bridge {
+  position: fixed;
+  z-index: 2147483000;
+  height: 8px;
+  min-width: 8px;
+  box-sizing: border-box;
+  pointer-events: none;
+  opacity: 0;
+  border: 1px solid var(--dsw-alias-border-l2-darkmode-thin);
+  border-radius: 999px;
+  background: var(--dsw-specific-menu);
+  box-shadow: var(--dsw-shadow-lv1);
+  transform-origin: center;
+  transition: opacity 140ms cubic-bezier(.2, 0, 0, 1);
 }
-[data-dsh-rice-surface-morph-layer] .dsh-rice-surface-morph-goo {
-  color:var(--dsw-specific-menu);
-}
-[data-dsh-rice-surface-morph-layer] .dsh-rice-surface-morph-origin,
-[data-dsh-rice-surface-morph-layer] .dsh-rice-surface-morph-target {
-  fill:currentColor;
-  transform-box:fill-box;
-  transform-origin:center;
-}
-[data-dsh-rice-surface-morph-layer] .dsh-rice-surface-morph-tether {
-  fill:none; stroke:currentColor; stroke-linecap:round;
-  stroke-dasharray:1; stroke-dashoffset:1;
-}
-[data-dsh-rice-surface-morph-layer] .dsh-rice-surface-morph-target {
-  transform:translate(var(--dsh-rice-morph-dx),var(--dsh-rice-morph-dy))
-            scale(var(--dsh-rice-morph-sx),var(--dsh-rice-morph-sy));
-}
-
-@keyframes dsh-rice-surface-origin-release {
-  0%,32% { opacity:1; transform:scale(1); }
-  74% { opacity:.76; transform:scale(.82); }
-  100% { opacity:0; transform:scale(.58); }
-}
-@keyframes dsh-rice-surface-tether-grow {
-  0% { opacity:.9; stroke-dashoffset:1; stroke-width:28px; }
-  58% { opacity:1; stroke-dashoffset:0; stroke-width:24px; }
-  82% { opacity:.72; stroke-dashoffset:0; stroke-width:16px; }
-  100% { opacity:0; stroke-dashoffset:0; stroke-width:8px; }
-}
-@keyframes dsh-rice-surface-target-arrive {
-  0% {
-    opacity:.96;
-    transform:translate(var(--dsh-rice-morph-dx),var(--dsh-rice-morph-dy))
-              scale(var(--dsh-rice-morph-sx),var(--dsh-rice-morph-sy));
-  }
-  68% { opacity:1; transform:translate(0,0) scale(1.014,.986); }
-  86% { opacity:1; transform:translate(0,0) scale(1); }
-  100% { opacity:0; transform:translate(0,0) scale(1); }
-}
-@keyframes dsh-rice-surface-panel-handoff {
-  0%,30% { opacity:0; }
-  100% { opacity:1; }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  [data-dsh-rice-surface-morph-layer] .dsh-rice-surface-morph-origin {
-    animation:dsh-rice-surface-origin-release 300ms cubic-bezier(.2,0,0,1) both;
-  }
-  [data-dsh-rice-surface-morph-layer] .dsh-rice-surface-morph-tether {
-    animation:dsh-rice-surface-tether-grow 300ms cubic-bezier(.2,0,0,1) both;
-  }
-  [data-dsh-rice-surface-morph-layer] .dsh-rice-surface-morph-target {
-    animation:dsh-rice-surface-target-arrive 300ms cubic-bezier(.2,0,0,1) both;
-  }
-  [data-dsh-rice-surface-morph="true"] .dsh-rice-panel {
-    animation:dsh-rice-surface-panel-handoff 300ms cubic-bezier(.2,0,0,1) both;
-  }
+.rice-local-surface-bridge[data-active="true"] {
+  opacity: 1;
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-dsh-rice-surface-morph-layer] { display:none; }
-  [data-dsh-rice-surface-morph="true"] .dsh-rice-panel { animation:none; }
+  .rice-local-surface-bridge {
+    transition: none;
+  }
 }
 `
 
-let riceSurfaceMorphAnchor
-let riceSurfaceMorphSequence = 0
-
-function riceSurfaceMorphNow() {
-  return typeof performance !== 'undefined' && typeof performance.now === 'function'
-    ? performance.now()
-    : Date.now()
+function riceLocalSurfaceGap(a, b) {
+  const dx = Math.max(a.left - b.right, b.left - a.right, 0)
+  const dy = Math.max(a.top - b.bottom, b.top - a.bottom, 0)
+  return Math.hypot(dx, dy)
 }
 
-function riceSurfaceMorphRect(rect) {
-  return Object.freeze({
-    left:rect.left,
-    top:rect.top,
-    right:rect.right,
-    bottom:rect.bottom,
-    width:rect.width,
-    height:rect.height,
-  })
+function riceFacingAxisPoints(aMin, aMax, bMin, bMax) {
+  if (aMax < bMin) return [aMax, bMin]
+  if (bMax < aMin) return [aMin, bMax]
+
+  const overlapStart = Math.max(aMin, bMin)
+  const overlapEnd = Math.min(aMax, bMax)
+  const center = (overlapStart + overlapEnd) / 2
+  return [center, center]
 }
 
-function riceSurfaceMorphOpticalRect(rect) {
-  const width = Math.min(36, rect.width)
-  const height = Math.min(36, rect.height)
-  const left = rect.left + (rect.width - width) / 2
-  const top = rect.top + (rect.height - height) / 2
-  return Object.freeze({
-    left,
-    top,
-    right:left + width,
-    bottom:top + height,
-    width,
-    height,
-  })
+function riceLocalSurfaceGeometry(sourceRect, targetRect) {
+  const [sourceX, targetX] = riceFacingAxisPoints(
+    sourceRect.left,
+    sourceRect.right,
+    targetRect.left,
+    targetRect.right,
+  )
+  const [sourceY, targetY] = riceFacingAxisPoints(
+    sourceRect.top,
+    sourceRect.bottom,
+    targetRect.top,
+    targetRect.bottom,
+  )
+  const distance = Math.hypot(targetX - sourceX, targetY - sourceY)
+
+  return {
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    distance,
+    left: (sourceX + targetX) / 2,
+    top: (sourceY + targetY) / 2,
+    angle: Math.atan2(targetY - sourceY, targetX - sourceX),
+  }
 }
 
-function riceArmSurfaceMorph(element, motion) {
-  if ((motion !== 'search' && motion !== 'activity') || typeof element?.getBoundingClientRect !== 'function') return
-  riceSurfaceMorphAnchor = Object.freeze({
-    motion,
-    at:riceSurfaceMorphNow(),
-    rect:riceSurfaceMorphOpticalRect(element.getBoundingClientRect()),
-  })
+function riceLocalSurfaceVisible(element) {
+  return Boolean(
+    element &&
+      element.isConnected &&
+      typeof element.getClientRects === 'function' &&
+      element.getClientRects().length > 0,
+  )
 }
 
-function ricePeekSurfaceMorphAnchor() {
-  const anchor = riceSurfaceMorphAnchor
-  if (anchor === undefined) return undefined
-  if (riceSurfaceMorphNow() - anchor.at <= RICE_SURFACE_MORPH_FRESH_MS) return anchor
-  riceSurfaceMorphAnchor = undefined
-  return undefined
+function riceLocalSurfaceHover(element) {
+  if (!element || typeof element.matches !== 'function') return false
+  try {
+    return element.matches(':hover')
+  } catch {
+    return false
+  }
 }
 
-function riceConsumeSurfaceMorphAnchor() {
-  const anchor = ricePeekSurfaceMorphAnchor()
-  riceSurfaceMorphAnchor = undefined
-  return anchor
+function riceLocalSurfaceFindTrigger(node, doc) {
+  const ElementCtor = doc.defaultView?.Element
+  if (ElementCtor && !(node instanceof ElementCtor)) return null
+  if (!node || typeof node.closest !== 'function') return null
+  return node.closest(RICE_LOCAL_SURFACE_TRIGGER_SELECTOR)
 }
 
-function riceClamp(value, min, max) {
-  return Math.max(min, Math.min(max, value))
+function riceLocalSurfaceDetailsTarget(summary) {
+  const details = summary?.closest?.('details')
+  if (!details?.open) return null
+
+  let candidate = summary.nextElementSibling
+  while (candidate) {
+    if (riceLocalSurfaceVisible(candidate)) return candidate
+    candidate = candidate.nextElementSibling
+  }
+
+  return riceLocalSurfaceVisible(details) ? details : null
 }
 
-function riceNearestPanelPoint(anchor, target) {
-  const ax = (anchor.left + anchor.right) / 2
-  const ay = (anchor.top + anchor.bottom) / 2
-  const insetX = Math.min(20, target.width / 2)
-  const insetY = Math.min(20, target.height / 2)
-  const candidates = [
-    { x:target.left, y:riceClamp(ay, target.top + insetY, target.bottom - insetY) },
-    { x:target.right, y:riceClamp(ay, target.top + insetY, target.bottom - insetY) },
-    { x:riceClamp(ax, target.left + insetX, target.right - insetX), y:target.top },
-    { x:riceClamp(ax, target.left + insetX, target.right - insetX), y:target.bottom },
-  ]
-  let best = candidates[0]
-  let bestDistance = Number.POSITIVE_INFINITY
+function riceLocalSurfaceControlledTargets(source, doc) {
+  const ids = (source.getAttribute?.('aria-controls') ?? '')
+    .trim()
+    .split(/\s+/u)
+    .filter(Boolean)
+
+  return ids
+    .map(id => doc.getElementById(id))
+    .filter(riceLocalSurfaceVisible)
+}
+
+function riceLocalSurfaceChooseTarget(source, doc) {
+  if (!source?.isConnected) return null
+  if (source.tagName === 'SUMMARY') return riceLocalSurfaceDetailsTarget(source)
+
+  const candidates = riceLocalSurfaceControlledTargets(source, doc)
+  if (candidates.length <= 1) return candidates[0] ?? null
+
+  const sourceRect = source.getBoundingClientRect()
+  let bestTarget = null
+  let bestGap = Infinity
+
   for (const candidate of candidates) {
-    const dx = candidate.x - ax
-    const dy = candidate.y - ay
-    const distance = dx * dx + dy * dy
-    if (distance < bestDistance) {
-      best = candidate
-      bestDistance = distance
+    const gap = riceLocalSurfaceGap(sourceRect, candidate.getBoundingClientRect())
+    if (gap < bestGap) {
+      bestGap = gap
+      bestTarget = candidate
     }
   }
-  return best
+
+  return bestTarget
 }
 
-function RiceSurfaceMorphLayer({ morph }) {
-  const { anchor, target, motion } = morph
-  const ax = (anchor.left + anchor.right) / 2
-  const ay = (anchor.top + anchor.bottom) / 2
-  const txCenter = (target.left + target.right) / 2
-  const tyCenter = (target.top + target.bottom) / 2
-  const endpoint = riceNearestPanelPoint(anchor, target)
-  const dx = endpoint.x - ax
-  const dy = endpoint.y - ay
-  const path = `M${ax} ${ay} C${ax + dx * .42} ${ay}, ${endpoint.x - dx * .22} ${endpoint.y}, ${endpoint.x} ${endpoint.y}`
-  const style = {
-    '--dsh-rice-morph-dx':`${ax - txCenter}px`,
-    '--dsh-rice-morph-dy':`${ay - tyCenter}px`,
-    '--dsh-rice-morph-sx':String(Math.max(.03, anchor.width / target.width)),
-    '--dsh-rice-morph-sy':String(Math.max(.03, anchor.height / target.height)),
+function riceLocalSurfaceExpanded(source) {
+  if (!source) return false
+  if (source.tagName === 'SUMMARY') return Boolean(source.closest?.('details')?.open)
+  return source.getAttribute?.('aria-expanded') === 'true'
+}
+
+function riceLocalSurfaceFocused(source, target, doc) {
+  const active = doc.activeElement
+  if (!active) return false
+
+  return Boolean(
+    active === source ||
+      source?.contains?.(active) ||
+      active === target ||
+      target?.contains?.(active),
+  )
+}
+
+function riceLocalSurfaceIntentional(source, target, doc) {
+  return Boolean(
+    riceLocalSurfaceExpanded(source) ||
+      riceLocalSurfaceHover(source) ||
+      riceLocalSurfaceHover(target) ||
+      riceLocalSurfaceFocused(source, target, doc),
+  )
+}
+
+function riceInstallLocalSurfaceStyle(doc) {
+  if (doc.getElementById(RICE_LOCAL_SURFACE_STYLE_ID)) return
+  const style = doc.createElement('style')
+  style.id = RICE_LOCAL_SURFACE_STYLE_ID
+  style.textContent = RICE_LOCAL_SURFACE_CSS
+  ;(doc.head || doc.documentElement).append(style)
+}
+
+function riceInstallLocalSurfaceContinuity(doc) {
+  const win = doc.defaultView
+  if (!win || !doc.documentElement) return () => {}
+
+  riceInstallLocalSurfaceStyle(doc)
+
+  const bridge = doc.createElement('div')
+  bridge.className = 'rice-local-surface-bridge'
+  bridge.setAttribute('aria-hidden', 'true')
+  ;(doc.body || doc.documentElement).append(bridge)
+
+  const root = doc.documentElement
+  let source = null
+  let target = null
+  let frameId = 0
+  let settleFrames = 0
+  let resizeObserver = null
+
+  function clearMarks() {
+    source?.removeAttribute?.('data-rice-local-surface-source')
+    target?.removeAttribute?.('data-rice-local-surface-target')
+    root.removeAttribute('data-rice-local-surface-engaged')
+    root.style.removeProperty('--rice-local-surface-gap')
+    bridge.removeAttribute('data-active')
   }
-  return h('svg', {
-    'data-dsh-rice-surface-morph-layer':'',
-    'data-origin':motion,
-    className:'dsh-rice-surface-morph-layer',
-    width:window.innerWidth,
-    height:window.innerHeight,
-    viewBox:`0 0 ${window.innerWidth} ${window.innerHeight}`,
-    preserveAspectRatio:'none',
-    focusable:'false',
-    'aria-hidden':true,
-  }, [
-    h('defs', { key:'defs' }, h('filter', {
-      id:'dsh-rice-surface-goo',
-      x:'-30%', y:'-30%', width:'160%', height:'160%',
-      colorInterpolationFilters:'sRGB',
-    }, [
-      h('feGaussianBlur', { key:'blur', in:'SourceGraphic', stdDeviation:'7', result:'blur' }),
-      h('feColorMatrix', {
-        key:'matrix',
-        in:'blur',
-        mode:'matrix',
-        values:'1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7',
-        result:'goo',
-      }),
-      h('feBlend', { key:'blend', in:'SourceGraphic', in2:'goo' }),
-    ])),
-    h('g', { key:'goo', className:'dsh-rice-surface-morph-goo', filter:'url(#dsh-rice-surface-goo)' }, [
-      h('rect', {
-        key:'origin',
-        className:'dsh-rice-surface-morph-origin',
-        x:anchor.left, y:anchor.top, width:anchor.width, height:anchor.height,
-        rx:12, ry:12,
-      }),
-      h('path', {
-        key:'tether',
-        className:'dsh-rice-surface-morph-tether',
-        d:path,
-        pathLength:1,
-      }),
-      h('rect', {
-        key:'target',
-        className:'dsh-rice-surface-morph-target',
-        x:target.left, y:target.top, width:target.width, height:target.height,
-        rx:20, ry:20,
-        style,
-      }),
-    ]),
-  ])
-}
 
-RailButton = function RiceSurfaceMorphRailButton(props) {
-  const motion = riceRailMotionKind(props.iconPath)
-  if (motion !== 'search' && motion !== 'activity') {
-    return h(RiceSurfaceMorphRailButtonBase, props)
+  function observePair() {
+    resizeObserver?.disconnect?.()
+    if (typeof win.ResizeObserver !== 'function') return
+
+    resizeObserver = new win.ResizeObserver(() => schedule(false))
+    if (source?.isConnected) resizeObserver.observe(source)
+    if (target?.isConnected) resizeObserver.observe(target)
   }
-  const onClick = event => {
-    riceArmSurfaceMorph(event.currentTarget, motion)
-    props.onClick?.(event)
+
+  function dropPair() {
+    clearMarks()
+    resizeObserver?.disconnect?.()
+    resizeObserver = null
+    source = null
+    target = null
+    settleFrames = 0
   }
-  return h(RiceSurfaceMorphRailButtonBase, { ...props, onClick })
-}
 
-ApplicationRail = function RiceSurfaceMorphApplicationRail(props) {
-  return h(React.Fragment, null, [
-    h('style', { key:'surface-morph' }, RICE_SURFACE_MORPH_CSS),
-    h(RiceSurfaceMorphApplicationRailBase, { ...props, key:'rail' }),
-  ])
-}
+  function applyBridgeGeometry(geometry) {
+    bridge.style.left = `${geometry.left}px`
+    bridge.style.top = `${geometry.top}px`
+    bridge.style.width = `${Math.max(geometry.distance + 8, 8)}px`
+    bridge.style.transform = `translate(-50%, -50%) rotate(${geometry.angle}rad)`
+  }
 
-QuickSwitcherOverlay = function RiceSurfaceMorphQuickSwitcherOverlay(props) {
-  /*
-   * Invoke the original switcher function unconditionally so its existing hook
-   * order remains stable, then clone only the root presentation element.
-   * client-postlude's dialog-wide Escape behavior is reproduced below.
-   */
-  const base = RiceQuickSwitcherOverlayBase(props)
-  const ui = props.uiState.getSnapshot()
-  const [morph, setMorph] = React.useState(null)
-  const wasOpenRef = React.useRef(false)
+  function render() {
+    frameId = 0
 
-  React.useLayoutEffect(() => {
-    if (!ui.open) {
-      wasOpenRef.current = false
-      setMorph(null)
+    if (!source?.isConnected) {
+      dropPair()
       return
     }
-    if (wasOpenRef.current) return
-    wasOpenRef.current = true
-    const anchor = riceConsumeSurfaceMorphAnchor()
-    if (anchor === undefined) return
-    const panel = document.querySelector('[data-dsh-rice-switcher] .dsh-rice-panel')
-    if (panel === null) return
-    const target = riceSurfaceMorphRect(panel.getBoundingClientRect())
-    if (target.width <= 0 || target.height <= 0) return
-    const id = ++riceSurfaceMorphSequence
-    setMorph(Object.freeze({ id, motion:anchor.motion, anchor:anchor.rect, target }))
-    const timer = window.setTimeout(() => {
-      setMorph(current => current?.id === id ? null : current)
-    }, RICE_SURFACE_MORPH_LIFETIME_MS)
-    return () => { window.clearTimeout(timer) }
-  }, [ui.open])
 
-  if (base === null) return null
-
-  const armed = ui.open && ricePeekSurfaceMorphAnchor() !== undefined
-  const active = armed || morph !== null
-  let overlay = base
-  if (active) {
-    const children = React.Children.toArray(base.props.children)
-    const panelIndex = children.findIndex(child => child?.props?.className === 'dsh-rice-panel')
-    if (morph !== null && panelIndex >= 0) {
-      children.splice(panelIndex, 0, h(RiceSurfaceMorphLayer, { key:`surface:${morph.id}`, morph }))
+    if (!riceLocalSurfaceIntentional(source, target, doc)) {
+      dropPair()
+      return
     }
-    overlay = React.cloneElement(base, { 'data-dsh-rice-surface-morph':'true' }, children)
+
+    const nextTarget = riceLocalSurfaceChooseTarget(source, doc)
+    if (nextTarget !== target) {
+      target?.removeAttribute?.('data-rice-local-surface-target')
+      target = nextTarget
+      observePair()
+    }
+
+    if (!target?.isConnected) {
+      clearMarks()
+      if (settleFrames > 0) {
+        settleFrames -= 1
+        schedule(false)
+      }
+      return
+    }
+
+    const sourceRect = source.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const geometry = riceLocalSurfaceGeometry(sourceRect, targetRect)
+    const engaged = geometry.distance <= RICE_LOCAL_SURFACE_DISTANCE_PX
+
+    clearMarks()
+    if (engaged) {
+      source.setAttribute('data-rice-local-surface-source', 'true')
+      target.setAttribute('data-rice-local-surface-target', 'true')
+      root.setAttribute('data-rice-local-surface-engaged', 'true')
+      root.style.setProperty('--rice-local-surface-gap', `${geometry.distance}px`)
+
+      if (geometry.distance > 0.5) {
+        applyBridgeGeometry(geometry)
+        bridge.setAttribute('data-active', 'true')
+      }
+    }
+
+    if (settleFrames > 0) {
+      settleFrames -= 1
+      schedule(false)
+    }
   }
 
-  const onKeyDownCapture = event => {
-    if (event.key !== 'Escape') return
-    event.preventDefault()
-    event.stopPropagation()
-    props.uiState.close()
+  function schedule(settle = false) {
+    if (settle) settleFrames = Math.max(settleFrames, RICE_LOCAL_SURFACE_SETTLE_FRAMES)
+    if (!frameId) frameId = win.requestAnimationFrame(render)
   }
-  return h('div', { style:{ display:'contents' }, onKeyDownCapture }, overlay)
+
+  function activate(nextSource) {
+    if (!nextSource?.isConnected) return
+    if (nextSource !== source) {
+      clearMarks()
+      resizeObserver?.disconnect?.()
+      resizeObserver = null
+      source = nextSource
+      target = null
+    }
+    observePair()
+    schedule(true)
+  }
+
+  function onPointerOver(event) {
+    const trigger = riceLocalSurfaceFindTrigger(event.target, doc)
+    if (trigger) {
+      activate(trigger)
+      return
+    }
+    if (target?.contains?.(event.target)) schedule(false)
+  }
+
+  function onFocusIn(event) {
+    const trigger = riceLocalSurfaceFindTrigger(event.target, doc)
+    if (trigger) {
+      activate(trigger)
+      return
+    }
+    if (target?.contains?.(event.target)) schedule(false)
+  }
+
+  function onInteractionOut() {
+    schedule(false)
+  }
+
+  function onClick(event) {
+    const trigger = riceLocalSurfaceFindTrigger(event.target, doc)
+    if (trigger) activate(trigger)
+  }
+
+  doc.addEventListener('pointerover', onPointerOver, true)
+  doc.addEventListener('pointerout', onInteractionOut, true)
+  doc.addEventListener('focusin', onFocusIn, true)
+  doc.addEventListener('focusout', onInteractionOut, true)
+  doc.addEventListener('click', onClick, true)
+  doc.addEventListener('scroll', onInteractionOut, true)
+  win.addEventListener('resize', onInteractionOut, { passive: true })
+
+  const mutationObserver = new win.MutationObserver(() => schedule(true))
+  mutationObserver.observe(doc.documentElement, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['aria-controls', 'aria-expanded', 'open'],
+  })
+
+  return () => {
+    if (frameId) win.cancelAnimationFrame(frameId)
+    mutationObserver.disconnect()
+    resizeObserver?.disconnect?.()
+    doc.removeEventListener('pointerover', onPointerOver, true)
+    doc.removeEventListener('pointerout', onInteractionOut, true)
+    doc.removeEventListener('focusin', onFocusIn, true)
+    doc.removeEventListener('focusout', onInteractionOut, true)
+    doc.removeEventListener('click', onClick, true)
+    doc.removeEventListener('scroll', onInteractionOut, true)
+    win.removeEventListener('resize', onInteractionOut)
+    dropPair()
+    bridge.remove()
+  }
+}
+
+function riceAttachBetterSidebarSurfaceState(service, doc) {
+  if (
+    !service ||
+    typeof service.getSnapshot !== 'function' ||
+    typeof service.subscribeState !== 'function'
+  ) {
+    return () => {}
+  }
+
+  const root = doc.documentElement
+
+  function clearState() {
+    root.removeAttribute('data-rice-better-sidebar-panel-open')
+    root.removeAttribute('data-rice-better-sidebar-bottom-open')
+    root.removeAttribute('data-rice-better-sidebar-mode')
+    root.removeAttribute('data-rice-better-sidebar-maximized')
+    root.style.removeProperty('--rice-better-sidebar-width')
+    root.style.removeProperty('--rice-better-sidebar-bottom-height')
+  }
+
+  function applySnapshot(snapshot) {
+    const state = snapshot?.state ?? {}
+    const panelOpen = Boolean(state.panelOpen)
+    const bottomOpen = Boolean(state.bottomOpen)
+    const mode = panelOpen && bottomOpen
+      ? 'split'
+      : panelOpen
+        ? 'side'
+        : bottomOpen
+          ? 'bottom'
+          : 'closed'
+
+    root.toggleAttribute('data-rice-better-sidebar-panel-open', panelOpen)
+    root.toggleAttribute('data-rice-better-sidebar-bottom-open', bottomOpen)
+    root.setAttribute('data-rice-better-sidebar-mode', mode)
+
+    if (typeof state.maximized === 'string' && state.maximized) {
+      root.setAttribute('data-rice-better-sidebar-maximized', state.maximized)
+    } else {
+      root.removeAttribute('data-rice-better-sidebar-maximized')
+    }
+
+    const width = Number(state.width)
+    if (Number.isFinite(width) && width >= 0) {
+      root.style.setProperty('--rice-better-sidebar-width', `${width}px`)
+    } else {
+      root.style.removeProperty('--rice-better-sidebar-width')
+    }
+
+    const bottomHeight = Number(state.bottomHeight)
+    if (Number.isFinite(bottomHeight) && bottomHeight >= 0) {
+      root.style.setProperty('--rice-better-sidebar-bottom-height', `${bottomHeight}px`)
+    } else {
+      root.style.removeProperty('--rice-better-sidebar-bottom-height')
+    }
+  }
+
+  function refresh() {
+    applySnapshot(service.getSnapshot())
+  }
+
+  refresh()
+  const unsubscribe = service.subscribeState(refresh)
+
+  return () => {
+    if (typeof unsubscribe === 'function') unsubscribe()
+    clearState()
+  }
+}
+
+function riceInstallBetterSidebarSurfaceState(ctx, doc) {
+  if (!ctx || typeof ctx.inject !== 'function') return
+
+  ctx.inject(['betterSidebar'], injectedCtx =>
+    riceAttachBetterSidebarSurfaceState(
+      injectedCtx?.betterSidebar ?? ctx.betterSidebar,
+      doc,
+    ),
+  )
+}
+
+const RiceLocalSurfaceApplyBase = apply
+apply = function RiceApplyWithLocalSurface(ctx) {
+  RiceLocalSurfaceApplyBase(ctx)
+  if (typeof document === 'undefined') return
+
+  if (ctx && typeof ctx.effect === 'function') {
+    ctx.effect(() => riceInstallLocalSurfaceContinuity(document))
+  }
+  riceInstallBetterSidebarSurfaceState(ctx, document)
+}
+
+globalThis.RiceSurfaceMorph = {
+  LOCAL_SURFACE_DISTANCE_PX: RICE_LOCAL_SURFACE_DISTANCE_PX,
+  edgeGap: riceLocalSurfaceGap,
+  geometry: riceLocalSurfaceGeometry,
+  install: riceInstallLocalSurfaceContinuity,
+  attachBetterSidebarState: riceAttachBetterSidebarSurfaceState,
 }

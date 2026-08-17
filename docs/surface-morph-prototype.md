@@ -1,57 +1,58 @@
-# Rail-to-switcher surface morph prototype
+# Local surface continuity prototype
 
-This slice tests one narrow presentation question: whether the rice-owned Sessions and Activity rail seats should read as the physical origin of the transient switcher surface.
+This branch now tests a narrower question than the first rail-to-switcher goo prototype: **when two interactive surfaces are already physically close, can dsh-rice make them read as one locally continuous surface without drawing a long-distance tether?**
 
-It is now rebased directly on `main` after the rail micro-motion work landed, so the surface-topology experiment can be dogfooded against the final 20px Scan / static Add / Activity signal-layer behavior without carrying the old stacked branch history.
+The old full-viewport SVG silhouette, Gaussian blur/alpha threshold, and 300 ms source-to-dialog flight are removed from the experiment. The replacement is deliberately proximity-gated and host-agnostic.
 
-## Product behavior
+## Geometry contract
 
-- Activating **Sessions** or **Activity** from the application rail captures the existing 36×36 optical seat as the transition origin.
-- When the transient switcher opens, a short presentation-only SVG silhouette grows from that origin toward the measured dialog rectangle.
-- A rounded tether and the two surfaces share one blur/alpha-threshold filter, producing the temporary connected/liquid topology.
-- The actual dialog stays real DOM above the silhouette. Text, input, buttons, focus, ARIA, hit targets, session commands, and list rendering are unchanged.
-- **New Session** does not participate because it creates a session directly instead of opening this transient surface.
-- Keyboard activation of the rail buttons still produces the surface transition because it reaches the same click path.
-- Opens triggered by other command surfaces have no fresh rail geometry and therefore use the existing switcher presentation without the morph layer.
+The maximum edge-to-edge gap is exactly **56 px**, one dsh-rice application-rail width.
 
-This prototype currently tests the **open / arrival** transition only. Closing remains immediate and behaviorally identical to the existing switcher. That keeps the experiment from adding delayed dialog teardown or navigation semantics before the visual direction has earned that complexity.
+For a source and target rectangle, dsh-rice measures the shortest edge gap. A small pointer-inert bridge is allowed only when the measured gap is `<= 56px`. Beyond that threshold, the pair does not receive a visual connector. Overlapping/touching surfaces can still be marked as engaged, but do not need an extra bridge.
 
-## Geometry boundary
+The bridge is positioned from the closest points on the two rectangles, not from their centers. That keeps the experiment local even for differently sized surfaces. Geometry is refreshed through `requestAnimationFrame`, a short post-activation settling window, `ResizeObserver`, document mutations, scroll, and viewport resize.
 
-Coarse-pointer mode may expand the interactive rail target to 44×44, but the surface origin is clamped back to the existing centered 36×36 optical seat. The animation therefore follows the visible object rather than the larger touch hit box.
+`prefers-reduced-motion: reduce` removes the bridge fade transition while preserving the same semantic engaged state.
 
-The destination rectangle is measured from the live `.dsh-rice-panel` after it mounts. No viewport breakpoint or hard-coded panel coordinates are introduced.
+## Host participation contract
 
-## Rendering boundary
+The generic path deliberately does not carry a selector map for DSH internals. A host control participates when it exposes one of these stable platform relationships:
 
-The browser artifact does not import `liquid-gooey` or any other motion package. `dsh-rice` still requires only:
+- `[aria-controls][aria-expanded]` pointing at a visible target by ID;
+- native `<details><summary>` with visible opened content.
 
-- `react`
-- `@deepseek-ai/dsh-client-ui-primitives`
+Pointer, focus, click, open/expanded state, and their reverse transitions drive the pair. The most recently interacted pair owns the single prototype bridge.
 
-The linked gooey experiment motivated the separation between a deformable silhouette and sharp interactive DOM. The implementation here is local and deliberately smaller: SVG rounded surfaces + a tether, `feGaussianBlur`, and alpha thresholding. No third-party source or package is vendored.
+This means **Todo**, **Produced**, and **composer** are smoke-test candidates only when the live host exposes one of those stable relationships. If a current DSH build does not expose a durable accessible control-to-surface relation for one of them, this PR intentionally leaves it unbound instead of adding a private class-name/React-tree dependency merely to make the demo fire.
 
-The layer uses `--dsw-specific-menu`, the same semantic surface token already used by the switcher panel, so stock DSH and semantic theme providers remain the color authority.
+The same rule covers generic collapsed cards: native `details/summary` participates directly; custom cards participate when they expose `aria-controls` + `aria-expanded`.
 
-## Motion / accessibility boundary
+## dsh-better-sidebar boundary
 
-The silhouette handoff lasts 300 ms and removes itself shortly afterward. The real panel is never replaced by the SVG and never becomes the hit target.
+The sidebar experiment refers specifically to **dsh-better-sidebar**. All new code still lives in **dsh-rice**; this branch does not modify or vendor `dsh-better-sidebar`.
 
-Current `main` rail motion is state-driven rather than the earlier 140 ms one-shot prototype. Sessions settles across roughly 190 ms of scanner/bar stagger, while Activity's two shell stages settle across roughly 180 ms. Physical dogfood therefore needs to judge the 300 ms surface handoff together with those release transitions rather than comparing it with the obsolete 140 ms gesture.
+`dsh-rice` injects the public `betterSidebar` client service, reads `getSnapshot().state`, and subscribes with `subscribeState()`. It mirrors only public state into dsh-rice-owned semantic hooks on the document root:
 
-`prefers-reduced-motion: reduce` removes the morph layer and panel handoff animation entirely. Focus behavior remains owned by the existing switcher.
+- `data-rice-better-sidebar-panel-open`
+- `data-rice-better-sidebar-bottom-open`
+- `data-rice-better-sidebar-mode="closed|side|bottom|split"`
+- `data-rice-better-sidebar-maximized` when present
+- `--rice-better-sidebar-width`
+- `--rice-better-sidebar-bottom-height`
 
-## Acceptance criteria
+There is **no guessed `.dsh-better-sidebar` DOM selector**. The public service exposes sidebar state but does not promise a target DOM node, so this pass tests real service/state integration without fabricating a visual source-to-sidebar seam. A future visible connector should require an explicit DOM/slot anchor contract or another stable accessible relationship.
 
-The prototype earns a merge only if physical dogfood confirms all of these:
+## What to dogfood
 
-1. **Sessions → switcher reads as one surface changing topology.** The tether must not read as a decorative line, tentacle, or object flying independently of the rail seat.
-2. **Activity → switcher remains coherent despite the longer travel.** Its click/release shell restoration and the surface morph must not compete for attention or look like two unrelated animations.
-3. **Recognition is not delayed.** The real dialog must become visually legible immediately enough that the 300 ms handoff does not make the switcher feel slower than `main`.
-4. **Rail release remains responsive.** Scan and Activity must continue their current interruptible release behavior; opening the switcher must not freeze, restart, or visually override those rail states.
-5. **Geometry stays attached.** The 36×36 origin must align with the visible rail seat and the destination must land on the measured panel under Firefox/Wayland and coarse-pointer layouts.
-6. **No interaction regression.** Input focus, Escape, backdrop close, rows, buttons, ARIA, hit targets, and commands must behave exactly as on `main`; the SVG layer remains presentation-only and pointer-inert.
-7. **Reduced motion is clean.** With `prefers-reduced-motion: reduce`, no morph or panel handoff should appear and the switcher should open exactly through the ordinary presentation path.
-8. **Theme behavior remains semantic.** Stock DSH and Matugen-derived palettes must paint the temporary surface through the same semantic menu token without conspicuous mismatch.
+Test the experiment against these routes:
 
-If the effect reads as a tentacle, obscures content, delays recognition of the dialog, or makes the rail release and surface handoff fight for attention, close the prototype rather than generalising the mechanism.
+1. a live DSH control with `aria-controls` + `aria-expanded` whose target opens within 56 px;
+2. a native or accessible collapsed-card surface;
+3. Todo / Produced / composer wherever the inspected host build already exposes that standards-based relation;
+4. dsh-better-sidebar opening, closing, side/bottom/split state, resize width, bottom height, and maximize state — observed through the dsh-rice root hooks above.
+
+The key failure condition is simple: if a pair is more than 56 px apart, dsh-rice must not draw a tentacle across the interface. If a host feature has no public/stable relation, the prototype should stay silent rather than guess.
+
+## Debug surface
+
+The browser experiment remains inspectable as `globalThis.RiceSurfaceMorph`, exposing the 56 px threshold, pure edge-gap/geometry helpers, the generic installer, and the better-sidebar state adapter. It remains isolated in `src/surface-morph.js`, so removing that file plus the existing build/package hooks removes the experiment without touching the rail, pulse, or Sidebar QA presentation code.
