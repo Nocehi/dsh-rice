@@ -14,6 +14,21 @@ Source repository: `google/material-design-icons`.
 
 The SVG path data is redistributed under the Apache License, Version 2.0. The surrounding `dsh-rice` source remains under its own MIT license.
 
+## Carbon Icon Animations — ScanMotion
+
+`dsh-rice` adapts the **ScanMotion** SVG path geometry and motion choreography from Carbon Icon Animations for the rice-owned Sessions rail presentation.
+
+Adapted donor files:
+
+- `src/components/Operations/ScanMotion/ScanMotion.js`
+- `src/components/Operations/ScanMotion/scan--motion.module.scss`
+
+Source repository: `carbon-design-system/icons-motion`.
+
+Copyright 2015 IBM Corp.
+
+The donor work is licensed under the Apache License, Version 2.0. The adaptation in `src/client-postlude.js` is modified for the dsh-rice namespace-module runtime, `currentColor` theming, rail hover/focus triggers, capability gating, and `prefers-reduced-motion` behavior. The adapted source carries an explicit modification notice. No `@carbon/icons-motion` runtime package is redistributed or required.
+
 ---
 
                                  Apache License

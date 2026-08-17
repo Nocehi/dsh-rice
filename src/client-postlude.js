@@ -64,6 +64,53 @@ const RICE_ADAPTIVE_CSS = `
 }
 `
 
+const RICE_RAIL_MOTION_CSS = `
+/* Physical dogfood rejected whole-glyph zoom, one-shot nudges, and an
+   autonomous scanner loop. Sessions and Activity model hover/focus as
+   reversible state transitions; New Session stays static until its icon
+   grammar is settled. */
+[data-dsh-rice-rail] .dsh-rice-rail-motion-icon { position:relative; z-index:1; display:block; flex:none; }
+[data-dsh-rice-rail] .dsh-rice-motion-search-svg,
+[data-dsh-rice-rail] .dsh-rice-motion-activity-svg { display:block; width:100%; height:100%; fill:currentColor; }
+[data-dsh-rice-rail] .dsh-rice-motion-search-scanner { transform:translate3d(0,0,0); transform-origin:16px 16px; }
+[data-dsh-rice-rail] .dsh-rice-motion-search-line { transform:scaleY(1); transform-origin:16px 16px; }
+[data-dsh-rice-rail] .dsh-rice-motion-activity-shell-top,
+[data-dsh-rice-rail] .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 0); }
+
+/* Adapted and modified from Carbon Icon Animations ScanMotion (Apache-2.0).
+   The donor geometry and scanner/bar transform relationship are retained, but
+   the old autonomous 2s envelope is intentionally replaced by interruptible
+   hover/focus state transitions. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Release defaults are intentionally the reverse of the enter stagger. */
+  [data-dsh-rice-motion="search"] .dsh-rice-motion-search-scanner { transition:transform 100ms cubic-bezier(.2,0,0,1) 90ms; }
+  [data-dsh-rice-motion="search"] .dsh-rice-motion-search-line-1 { transition:transform 100ms cubic-bezier(.2,0,0,1) 60ms; }
+  [data-dsh-rice-motion="search"] .dsh-rice-motion-search-line-2 { transition:transform 100ms cubic-bezier(.2,0,0,1) 30ms; }
+  [data-dsh-rice-motion="search"] .dsh-rice-motion-search-line-3 { transition:transform 100ms cubic-bezier(.2,0,0,1) 0ms; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-scanner { transform:translate3d(4px,0,0); transition-delay:0ms; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-1 { transform:scaleY(1.3); transition-delay:30ms; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-2 { transform:scaleY(1.3); transition-delay:60ms; }
+  [data-dsh-rice-motion="search"]:focus-visible .dsh-rice-motion-search-line-3 { transform:scaleY(1.3); transition-delay:90ms; }
+
+  /* Activity's baseline and waveform are the signal layer and remain visible.
+     Only the structural shell participates in the snake-like wipe. */
+  [data-dsh-rice-motion="activity"] .dsh-rice-motion-activity-shell-top { transition:clip-path 110ms cubic-bezier(.2,0,0,1) 0ms; }
+  [data-dsh-rice-motion="activity"] .dsh-rice-motion-activity-shell-bottom { transition:clip-path 110ms cubic-bezier(.2,0,0,1) 70ms; }
+  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 100%); transition-delay:0ms; }
+  [data-dsh-rice-motion="activity"]:focus-visible .dsh-rice-motion-activity-shell-top { clip-path:inset(0 0 0 100%); transition-delay:70ms; }
+}
+
+@media (prefers-reduced-motion: no-preference) and (hover:hover) and (pointer:fine) {
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-scanner { transform:translate3d(4px,0,0); transition-delay:0ms; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-1 { transform:scaleY(1.3); transition-delay:30ms; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-2 { transform:scaleY(1.3); transition-delay:60ms; }
+  [data-dsh-rice-motion="search"]:hover .dsh-rice-motion-search-line-3 { transform:scaleY(1.3); transition-delay:90ms; }
+
+  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-bottom { clip-path:inset(0 0 0 100%); transition-delay:0ms; }
+  [data-dsh-rice-motion="activity"]:hover .dsh-rice-motion-activity-shell-top { clip-path:inset(0 0 0 100%); transition-delay:70ms; }
+}
+`
+
 /* Optional dsh-sidebar-qa integration. The floating selection affordance
    already has a stable plugin-owned data host, so it can be presented without
    knowing any CSS-module class name. The AskPanel gets the second data scope
@@ -219,6 +266,92 @@ function installSidebarQaPresentation(ctx) {
   }
 }
 
+/* Adapted and modified from Carbon Icon Animations ScanMotion (Apache-2.0).
+   See THIRD_PARTY_NOTICES.md for source and attribution. */
+const RICE_SCAN_ICON_SIZE = 20
+const RICE_SCAN_MOTION_PATHS = Object.freeze({
+  line1:'M15,9h2v14h-2V9z',
+  line2:'M21,9h2v14h-2V9z',
+  line3:'M27,9h2v14h-2V9z',
+  scanner:'M21,29H5c-1.1,0-2-0.9-2-2V5c0-1.1,0.9-2,2-2h16v2H5v22h16V29z',
+})
+
+const RICE_BROWSE_ACTIVITY_PATHS = Object.freeze({
+  shellTop:'M96-588v-155.85Q96-776 118.56-796q22.57-20 54.25-20h614.5q31.69 0 54.19 20 22.5 20 22.5 52.15V-588h-72v-156H168v156H96Z',
+  shellBottom:'M172.69-264q-31.69 0-54.19-20Q96-304 96-336v-180h72v180h624v-180h72v180q0 32-22.56 52-22.57 20-54.25 20h-614.5Z',
+  baseline:'M84-144q-15.3 0-25.65-10.29Q48-164.58 48-179.79t10.35-25.71Q68.7-216 84-216h792q15.3 0 25.65 10.29Q912-195.42 912-180.21t-10.35 25.71Q891.3-144 876-144H84Z',
+  waveform:'M96-516v-72h233q14 0 25 7t17 18l39 72 112-176q5-8 12.42-12.5 7.43-4.5 16.5-4.5 9.08 0 17.08 3.5 8 3.5 13 10.5l61 82h222v72H629q-11 0-21-5t-17-14l-37-50-116 184q-5 8-13.06 12.5-8.07 4.5-16.94 4.5-9.9 0-18.45-5.5Q381-395 376-403l-62-113H96Z',
+})
+
+function riceRailMotionKind(iconPath) {
+  if (iconPath === MATERIAL_SYMBOL_PATHS.search) return 'search'
+  if (iconPath === MATERIAL_SYMBOL_PATHS.browseActivity) return 'activity'
+  return undefined
+}
+
+function RiceRailMotionIcon({ iconPath, iconSize, motion }) {
+  if (motion === 'search') {
+    return h('span', {
+      className:'dsh-rice-rail-motion-icon dsh-rice-rail-motion-search',
+      style:{ width:RICE_SCAN_ICON_SIZE, height:RICE_SCAN_ICON_SIZE },
+      'aria-hidden':true,
+    }, h('svg', {
+      className:'dsh-rice-rail-icon dsh-rice-motion-search-svg',
+      width:RICE_SCAN_ICON_SIZE,
+      height:RICE_SCAN_ICON_SIZE,
+      viewBox:'0 0 32 32',
+      fill:'currentColor',
+      focusable:'false',
+      'aria-hidden':true,
+    }, [
+      h('path', { key:'line1', className:'dsh-rice-motion-search-line dsh-rice-motion-search-line-1', d:RICE_SCAN_MOTION_PATHS.line1 }),
+      h('path', { key:'line2', className:'dsh-rice-motion-search-line dsh-rice-motion-search-line-2', d:RICE_SCAN_MOTION_PATHS.line2 }),
+      h('path', { key:'line3', className:'dsh-rice-motion-search-line dsh-rice-motion-search-line-3', d:RICE_SCAN_MOTION_PATHS.line3 }),
+      h('path', { key:'scanner', className:'dsh-rice-motion-search-scanner', d:RICE_SCAN_MOTION_PATHS.scanner }),
+    ]))
+  }
+
+  if (motion === 'activity') {
+    return h('span', {
+      className:'dsh-rice-rail-motion-icon dsh-rice-rail-motion-activity',
+      style:{ width:iconSize, height:iconSize },
+      'aria-hidden':true,
+    }, h('svg', {
+      className:'dsh-rice-rail-icon dsh-rice-motion-activity-svg',
+      width:iconSize,
+      height:iconSize,
+      viewBox:'0 -960 960 960',
+      fill:'currentColor',
+      focusable:'false',
+      'aria-hidden':true,
+    }, [
+      h('path', { key:'shell-top', className:'dsh-rice-motion-activity-shell-top', d:RICE_BROWSE_ACTIVITY_PATHS.shellTop }),
+      h('path', { key:'shell-bottom', className:'dsh-rice-motion-activity-shell-bottom', d:RICE_BROWSE_ACTIVITY_PATHS.shellBottom }),
+      h('path', { key:'baseline', className:'dsh-rice-motion-activity-baseline', d:RICE_BROWSE_ACTIVITY_PATHS.baseline }),
+      h('path', { key:'waveform', className:'dsh-rice-motion-activity-waveform', d:RICE_BROWSE_ACTIVITY_PATHS.waveform }),
+    ]))
+  }
+
+  return h(MaterialSymbol, { path:iconPath, size:iconSize })
+}
+
+RailButton = function RiceAnimatedRailButton({ label, iconPath, iconSize = 20, badge, onClick }) {
+  const motion = riceRailMotionKind(iconPath)
+  return h('button', {
+    type:'button',
+    className:'dsh-rice-rail-button',
+    'data-dsh-rice-motion':motion,
+    'aria-label':label,
+    title:label,
+    onClick,
+  }, [
+    motion === undefined
+      ? h(MaterialSymbol, { key:'icon', path:iconPath, size:iconSize })
+      : h(RiceRailMotionIcon, { key:'icon', iconPath, iconSize, motion }),
+    badge > 0 ? h('span', { key:'badge', className:'dsh-rice-badge' }, badge > 99 ? '99+' : String(badge)) : null,
+  ])
+}
+
 /** Distinguish duplicate visible rows in the polite live-region announcement. */
 activeAnnouncement = function riceActiveAnnouncement(row) {
   if (row === undefined) return ''
@@ -230,7 +363,7 @@ activeAnnouncement = function riceActiveAnnouncement(row) {
 /** Carry bounded compatibility plus adaptive interaction rules with the rail. */
 ApplicationRail = function RiceApplicationRail(props) {
   return h(React.Fragment, null, [
-    h('style', { key:'presentation-compat' }, `${RICE_COMPAT_CSS}\n${RICE_ADAPTIVE_CSS}\n${RICE_SIDEBAR_QA_CSS}`),
+    h('style', { key:'presentation-compat' }, `${RICE_COMPAT_CSS}\n${RICE_ADAPTIVE_CSS}\n${RICE_SIDEBAR_QA_CSS}\n${RICE_RAIL_MOTION_CSS}`),
     h(RiceApplicationRailBase, { ...props, key:'rail' }),
   ])
 }
