@@ -7,6 +7,7 @@ const corePath = resolve(root, 'src/core.js')
 const pulsePath = resolve(root, 'src/pulse.js')
 const clientPath = resolve(root, 'src/client.js')
 const postludePath = resolve(root, 'src/client-postlude.js')
+const surfaceMorphPath = resolve(root, 'src/surface-morph.js')
 const outputPath = resolve(root, 'lib/client.js')
 const REACT_IMPORT = "import React from 'react'\n"
 const CORE_IMPORT = "import { COMMAND_IDS, attentionCount, deriveSessionGroups, flattenGroups, nextMruId, overviewGroups, updateMru } from './core.js'\n"
@@ -34,15 +35,17 @@ function stripModuleSyntax(source, label) {
   return transformed.trimEnd()
 }
 
-const [coreSource, pulseSource, clientSource, postludeSource] = await Promise.all([
+const [coreSource, pulseSource, clientSource, postludeSource, surfaceMorphSource] = await Promise.all([
   readFile(corePath, 'utf8'),
   readFile(pulsePath, 'utf8'),
   readFile(clientPath, 'utf8'),
   readFile(postludePath, 'utf8'),
+  readFile(surfaceMorphPath, 'utf8'),
 ])
 if (/^\s*import\s/mu.test(coreSource)) throw new Error('dsh-rice build: src/core.js must remain dependency-free')
 if (/^\s*import\s/mu.test(pulseSource)) throw new Error('dsh-rice build: src/pulse.js must remain dependency-free')
 if (/^\s*(?:import|export)\s/mu.test(postludeSource)) throw new Error('dsh-rice build: src/client-postlude.js must remain a dependency-free script')
+if (/^\s*(?:import|export)\s/mu.test(surfaceMorphSource)) throw new Error('dsh-rice build: src/surface-morph.js must remain a dependency-free script')
 if (!clientSource.startsWith(CLIENT_IMPORTS)) {
   throw new Error('dsh-rice build: src/client.js imports must remain React, ./core.js, ./pulse.js, then DSH UI primitives, exactly')
 }
@@ -53,13 +56,14 @@ const core = stripModuleSyntax(coreSource, 'src/core.js')
 const pulse = stripModuleSyntax(pulseSource, 'src/pulse.js')
 const client = stripModuleSyntax(clientBody, 'src/client.js')
 const postlude = stripModuleSyntax(postludeSource, 'src/client-postlude.js')
+const surfaceMorph = stripModuleSyntax(surfaceMorphSource, 'src/surface-morph.js')
 const artifact = [
   'window.__ModuleLoader__.load({ id: "dsh-rice", factory: (require) => {',
   "'use strict'",
   'var module = { exports: {} }; var exports = module.exports;',
   "const React = require('react');",
   "const { FishLogo } = require('@deepseek-ai/dsh-client-ui-primitives');",
-  '', core, '', pulse, '', client, '', postlude, '',
+  '', core, '', pulse, '', client, '', postlude, '', surfaceMorph, '',
   'module.exports = { inject, COMMAND_IDS, apply };',
   'return module.exports;',
   '} });',
